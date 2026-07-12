@@ -9,6 +9,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { toReqRes, toFetchResponse } from 'fetch-to-node';
 import { z } from 'zod';
+import { compute as timeDilationCompute } from './kernels/time-dilation.kernel.mjs';
 
 const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -254,7 +255,9 @@ async function loadData(env) {
 // KERNEL_REGISTRY maps a tool_id to its compute() + registered mandate_type.
 // EMPTY in 1.2 — the L1 kernel WUs (buildplan 1.3) populate it.
 // ---------------------------------------------------------------------------
-const KERNEL_REGISTRY = {};
+const KERNEL_REGISTRY = {
+  nt_time_dilation: { compute: timeDilationCompute, mandate_type: 'me.newtripoli/time_dilation' },
+};
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
 // canonical steps[] definition (used only when the chain has >=1 gate, as the
@@ -584,6 +587,79 @@ function buildServer(manifest) {
     return {
       content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
       structuredContent: output,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // nt_time_dilation — buildplan 1.3, NEWTRIPOLI-L1-KERNELS-SPEC.md §1.
+  // Register: canon. Guest-legal: YES.
+  // -------------------------------------------------------------------------
+  server.registerTool('nt_time_dilation', {
+    title: 'New Tripoli time dilation (subjective-year multiplier)',
+    description:
+      'Computes subjective-years-lived multipliers for a given New Tripoli time-dilation rate ' +
+      '(subjective years per real calendar year) and Universal Sabbath reset interval. Flags whether ' +
+      'the rate exceeds the ~122-yr biological neuronal lifespan ceiling (upload required). Pure ' +
+      'multiply/divide/compare arithmetic — deterministic, guest-legal (zk-provable in §18).',
+    inputSchema: {
+      rate_x: z.number().min(1).max(1e9).default(50).describe(
+        'Subjective years lived per real calendar year (New Tripoli series ceiling; canon default 50).'
+      ),
+      reset_months: z.union([z.literal(6), z.literal(12)]).default(6).describe(
+        'Months between Universal Sabbath resets (canon default 6).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ rate_x, reset_months }) => {
+    const input_parameters = {
+      rate_x:       rate_x ?? 50,
+      reset_months: reset_months ?? 6,
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = timeDilationCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/time_dilation',
+      tool_id: 'nt-time-dilation',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['canon'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'canon',
+        data_sources: [
+          'Canon - New Tripoli.md §18 (Time Dilation)',
+          'Canon - New Tripoli.md §9 (Universal Sabbath)',
+          'Feasibility Audit §4.8 (lifespan ceiling)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/sims/time-dilation.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
     };
   });
 
