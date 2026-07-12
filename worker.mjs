@@ -10,6 +10,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { toReqRes, toFetchResponse } from 'fetch-to-node';
 import { z } from 'zod';
 import { compute as timeDilationCompute } from './kernels/time-dilation.kernel.mjs';
+import { compute as kineticProbeCompute } from './kernels/kinetic-probe.kernel.mjs';
 
 const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -257,6 +258,7 @@ async function loadData(env) {
 // ---------------------------------------------------------------------------
 const KERNEL_REGISTRY = {
   nt_time_dilation: { compute: timeDilationCompute, mandate_type: 'me.newtripoli/time_dilation' },
+  nt_kinetic_probe: { compute: kineticProbeCompute, mandate_type: 'me.newtripoli/kinetic_probe' },
 };
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
@@ -649,6 +651,90 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/sims/time-dilation.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // nt_kinetic_probe — buildplan 1.3, NEWTRIPOLI-L1-KERNELS-SPEC.md §2.
+  // Register: canon + feasibility. Guest-legal: YES (sqrt-only).
+  // Physics = RELATIVISTIC (γ−1)mc²; classical ½mv² reported alongside.
+  // -------------------------------------------------------------------------
+  server.registerTool('nt_kinetic_probe', {
+    title: 'New Tripoli kinetic probe (relativistic delivery + deceleration lottery)',
+    description:
+      'Computes the cost and survival of an ETI kinetic-probe delivery: travel time, relativistic ' +
+      'cruise kinetic energy (γ−1)mc² (with the classical ½mv² reported alongside), and the ' +
+      'vaporization margin that gates the deceleration lottery. A passive relativistic impact ' +
+      'vaporizes the osmium slug deterministically; only a staged deceleration to ~1 km/s lets it ' +
+      'survive a solid-body impact. sqrt-only arithmetic — deterministic, guest-legal (zk-provable in §18).',
+    inputSchema: {
+      distance_ly: z.number().min(5000).max(10000).default(7500).describe(
+        'ETI distance in light-years (canon range 5,000–10,000; default midpoint 7,500).'
+      ),
+      cruise_c: z.number().gt(0).max(0.90).default(0.10).describe(
+        'Cruise speed as a fraction of c (default 0.10).'
+      ),
+      terminal_approach: z.enum(['passive', 'staged']).default('staged').describe(
+        'Terminal approach: passive impact at cruise speed, or staged deceleration to ~1 km/s (canon default staged).'
+      ),
+      target: z.enum([
+        'terrestrial planet', 'moon', 'asteroid', 'dwarf planet', 'gas giant', 'star',
+      ]).default('terrestrial planet').describe(
+        'Target body class (canon default terrestrial planet).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ distance_ly, cruise_c, terminal_approach, target }) => {
+    const input_parameters = {
+      distance_ly:       distance_ly ?? 7500,
+      cruise_c:          cruise_c ?? 0.10,
+      terminal_approach: terminal_approach ?? 'staged',
+      target:            target ?? 'terrestrial planet',
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = kineticProbeCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/kinetic_probe',
+      tool_id: 'nt-kinetic-probe',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['canon', 'feasibility'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'canon',
+        data_sources: [
+          'Canon - New Tripoli.md (ETI kinetic-probe delivery / probe block)',
+          'Feasibility Audit §4.1 (deceleration lottery)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/sims/kinetic-probe.html',
       },
     };
     artifact.audit_signature.build_identity = {
