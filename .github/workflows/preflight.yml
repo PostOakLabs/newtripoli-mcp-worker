@@ -1,0 +1,95 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Pre-flight — NewTripoli MCP Worker  (CIGOLD-PARITY-SPEC §1.4.1)
+#
+# Offline-green validation of the committed worker + kernels before any Cloudflare
+# deploy. Pure `node` steps — NO wrangler dev, NO deploy/smoke (deploy is
+# FLAG-AND-WAIT; a later WU adds the Cloudflare deploy job when green-lit).
+#
+# Jobs (in order): syntax → server.json shape → hash/buildid primitives frozen →
+# canon-sync → §17 kernel-digest → golden drift → Tier-A kernel fixtures.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Pre-flight — NewTripoli MCP Worker
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: preflight-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    name: Validate worker + kernels
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (shallow)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"          # Wrangler 4.x requires Node >=22
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 1. Syntax — parse every kernel, the worker, both libs, and every script.
+      - name: Syntax — node --check
+        run: |
+          set -e
+          for f in kernels/*.kernel.mjs worker.mjs lib/_hash.mjs lib/_buildid.mjs scripts/*.mjs; do
+            node --check "$f"
+          done
+
+      # 2. server.json identity shape (SCAFFOLD-1/HASHWIRE-set fields).
+      - name: server.json shape
+        run: |
+          node -e '
+            const s = JSON.parse(require("fs").readFileSync("server.json","utf8"));
+            const j = JSON.stringify(s);
+            const need = [
+              ["name", s.name === "me.newtripoli/tools"],
+              ["mcp endpoint", j.includes("mcp.newtripoli.xyz/mcp")],
+              ["websiteUrl", j.includes("https://newtripoli.xyz")],
+              ["repository", j.includes("github.com/PostOakLabs/newtripoli-mcp-worker")],
+            ];
+            const bad = need.filter(([,ok]) => !ok).map(([k]) => k);
+            if (bad.length) { console.error("::error::server.json missing/incorrect: " + bad.join(", ")); process.exit(1); }
+            console.log("OK  server.json identity fields present");
+          '
+
+      # 3. Hash + build-identity primitives are byte-frozen. The workflow has no
+      #    scratch reference in CI, so freshness is enforced by the self-referential
+      #    §17 digest (step 5) + the golden gate (step 6); here we only assert the
+      #    files exist and parse (covered by step 1) and carry their expected exports.
+      - name: Hash/buildid primitives present
+        run: |
+          node -e '
+            const h = require("fs").readFileSync("lib/_hash.mjs","utf8");
+            const b = require("fs").readFileSync("lib/_buildid.mjs","utf8");
+            if (!/export\s+async\s+function\s+executionHash/.test(h)) { console.error("::error::lib/_hash.mjs missing executionHash export"); process.exit(1); }
+            if (!/export\s+async\s+function\s+sourceDigest/.test(b)) { console.error("::error::lib/_buildid.mjs missing sourceDigest export"); process.exit(1); }
+            console.log("OK  hash/buildid primitives export intact");
+          '
+
+      # 4. Canon-sync — CANON_VERSION lockstep + 14 vendored kernel consts == canon.
+      - name: Canon-sync gate
+        run: node scripts/check-canon-sync.mjs
+
+      # 5. §17 kernel-digest freshness (self-referential over worker.mjs).
+      - name: §17 kernel-digest freshness
+        run: node scripts/check-kernel-digest.mjs
+
+      # 6. Golden-hash drift — recompute L1 goldens at fixture defaults vs committed.
+      - name: Golden-hash drift gate
+        run: node scripts/check-goldens.mjs
+
+      # 7. Tier-A kernel-fixture unit — L1 §6.4 parity anchors. Pure import.
+      - name: Test — kernel fixtures (Tier A)
+        run: node --test scripts/tests/tier-a-kernels.test.mjs
