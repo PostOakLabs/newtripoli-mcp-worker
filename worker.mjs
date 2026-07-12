@@ -11,6 +11,7 @@ import { toReqRes, toFetchResponse } from 'fetch-to-node';
 import { z } from 'zod';
 import { compute as timeDilationCompute } from './kernels/time-dilation.kernel.mjs';
 import { compute as kineticProbeCompute } from './kernels/kinetic-probe.kernel.mjs';
+import { compute as vatFeasibilityCompute } from './kernels/vat-feasibility.kernel.mjs';
 
 const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -259,6 +260,7 @@ async function loadData(env) {
 const KERNEL_REGISTRY = {
   nt_time_dilation: { compute: timeDilationCompute, mandate_type: 'me.newtripoli/time_dilation' },
   nt_kinetic_probe: { compute: kineticProbeCompute, mandate_type: 'me.newtripoli/kinetic_probe' },
+  nt_vat_feasibility: { compute: vatFeasibilityCompute, mandate_type: 'me.newtripoli/vat_feasibility' },
 };
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
@@ -735,6 +737,94 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/sims/kinetic-probe.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // nt_vat_feasibility — buildplan 1.3, NEWTRIPOLI-L1-KERNELS-SPEC.md §3.
+  // Register: feasibility + canon. Guest-legal: NO (Math.pow ⇒ hash-verifiable only).
+  // -------------------------------------------------------------------------
+  server.registerTool('nt_vat_feasibility', {
+    title: 'New Tripoli vat feasibility (Landauer digital-mind pricing vs Sahara cap)',
+    description:
+      'Computes the total power draw of a New Tripoli population split between biological brains ' +
+      '(20 W × acceleration × support overhead) and digital minds (Landauer-priced at 10^fidelity ' +
+      'irreversible bit-ops/s), then compares it to the Sahara solar cap (~230 TW). Returns the ' +
+      'percentage of Sahara capacity used, the headroom margin, a feasibility verdict, and whether ' +
+      'the requested acceleration sits within the augmentation stage ceiling — the canon point that ' +
+      'the binding constraint is biology, not power. Uses Math.pow for the Landauer price: ' +
+      'hash-verifiable only, not guest-legal / not zk-provable.',
+    inputSchema: {
+      pop_billions: z.number().min(1).max(10).default(8.1).describe(
+        'Total population in billions (canon default 8.1).'
+      ),
+      bio_pct: z.number().min(0).max(100).default(10).describe(
+        'Percentage of the population that is biological (canon default 10 — the 90/10 split).'
+      ),
+      accel: z.number().int().min(1).max(50).default(1).describe(
+        'Subjective-time acceleration factor applied to biological metabolic load (default 1).'
+      ),
+      aug_stage: z.enum(['vat', 'sensory', 'metabolic', 'synaptic', 'hybrid', 'upload']).default('vat').describe(
+        'Augmentation stage whose biological acceleration ceiling is checked (canon default vat).'
+      ),
+      digital_fidelity_ops: z.number().int().min(18).max(25).default(20).describe(
+        'Exponent of 10 for digital-mind irreversible bit-ops per second (default 20).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ pop_billions, bio_pct, accel, aug_stage, digital_fidelity_ops }) => {
+    const input_parameters = {
+      pop_billions:         pop_billions ?? 8.1,
+      bio_pct:              bio_pct ?? 10,
+      accel:                accel ?? 1,
+      aug_stage:            aug_stage ?? 'vat',
+      digital_fidelity_ops: digital_fidelity_ops ?? 20,
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = vatFeasibilityCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/vat_feasibility',
+      tool_id: 'nt-vat-feasibility',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['feasibility', 'canon'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'feasibility',
+        data_sources: [
+          'Cognitive Husbandry.md — Technical Feasibility (Brain in a Vat)',
+          'Canon - New Tripoli.md §26 (90/10 substrate split)',
+          'Feasibility Audit §5 (Landauer floor)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/sims/feasibility.html',
       },
     };
     artifact.audit_signature.build_identity = {
