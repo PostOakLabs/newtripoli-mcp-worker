@@ -23,7 +23,7 @@ import { compute as techTreePathCompute } from './kernels/tech-tree.kernel.mjs';
 import { compute as provenanceCompute } from './kernels/provenance.kernel.mjs';
 import { compute as feasibilityCrosswalkCompute } from './kernels/feasibility-crosswalk.kernel.mjs';
 
-const BASE_URL = 'https://newtripoli.xyz';
+export const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
 
 // Vendored from data/canon.js CH_CANON.CANON_VERSION. Enters the hash preimage via
@@ -39,7 +39,7 @@ const NT_ARTIFACT_VERSION = '1.0.0';
 // OCG Standard §17 (Kernel Identity Binding) — content digest of this file, computed by
 // generate.mjs over the LF-normalized source with this line's value replaced by the literal
 // 'PLACEHOLDER'. Populated by `node generate.mjs`; idempotent (re-running yields no diff).
-const KERNEL_DIGEST = 'sha256:700354bc6119413239741691d1592f64890ddff47f17c083abad19bbc4776f29';
+const KERNEL_DIGEST = 'sha256:5d688bf16d0f5852fdba48c6860e0803f32c4c35f68f13feb5ceaaaefe446497';
 
 // Vendored from AINumbers ChainGraph SSOT kernels/_hash.mjs (OCG Standard §4 JCS).
 // Namespace adapted for me.newtripoli. Recursive key sort + per-value
@@ -267,7 +267,7 @@ async function loadData(env) {
 // KERNEL_REGISTRY maps a tool_id to its compute() + registered mandate_type.
 // EMPTY in 1.2 — the L1 kernel WUs (buildplan 1.3) populate it.
 // ---------------------------------------------------------------------------
-const KERNEL_REGISTRY = {
+export const KERNEL_REGISTRY = {
   nt_time_dilation: { compute: timeDilationCompute, mandate_type: 'me.newtripoli/time_dilation' },
   nt_kinetic_probe: { compute: kineticProbeCompute, mandate_type: 'me.newtripoli/kinetic_probe' },
   nt_vat_feasibility: { compute: vatFeasibilityCompute, mandate_type: 'me.newtripoli/vat_feasibility' },
@@ -281,6 +281,210 @@ const KERNEL_REGISTRY = {
   nt_tech_tree_path: { compute: techTreePathCompute, mandate_type: 'me.newtripoli/tech_tree_path' },
   nt_provenance: { compute: provenanceCompute, mandate_type: 'me.newtripoli/provenance' },
   nt_feasibility_crosswalk: { compute: feasibilityCrosswalkCompute, mandate_type: 'me.newtripoli/feasibility_crosswalk' },
+};
+
+// ---------------------------------------------------------------------------
+// DISCOVERY-SPEC §2.1 — TOOL_META. Presentation-only metadata lifted mechanically
+// from each tool's own registerTool block below (title, description first sentence,
+// register/guest_legal header comment, audit_signature.permalink/data_sources,
+// inputSchema keys, compliance_flags). OUTSIDE every hash preimage — editing this
+// block never moves a golden. Consumed only by generate.mjs (never imported at
+// request time) to emit data/tools-manifest.json.
+// ---------------------------------------------------------------------------
+export const TOOL_META = {
+  nt_time_dilation: {
+    slug: 'time-dilation',
+    title: 'New Tripoli time dilation (subjective-year multiplier)',
+    description: 'Computes subjective-years-lived multipliers for a given New Tripoli time-dilation rate (subjective years per real calendar year) and Universal Sabbath reset interval.',
+    register: 'canon',
+    guest_legal: true,
+    permalink_path: 'ch-sims/sims/time-dilation.html',
+    citations: [
+      'Canon - New Tripoli.md §18 (Time Dilation)',
+      'Canon - New Tripoli.md §9 (Universal Sabbath)',
+      'Feasibility Audit §4.8 (lifespan ceiling)',
+    ],
+    inputs: ['rate_x', 'reset_months'],
+    compliance_flags: ['canon'],
+  },
+  nt_kinetic_probe: {
+    slug: 'kinetic-probe',
+    title: 'New Tripoli kinetic probe (relativistic delivery + deceleration lottery)',
+    description: 'Computes the cost and survival of an ETI kinetic-probe delivery: travel time, relativistic cruise kinetic energy (γ−1)mc² (with the classical ½mv² reported alongside), and the vaporization margin that gates the deceleration lottery.',
+    register: 'canon',
+    guest_legal: true,
+    permalink_path: 'ch-sims/sims/kinetic-probe.html',
+    citations: [
+      'Canon - New Tripoli.md (ETI kinetic-probe delivery / probe block)',
+      'Feasibility Audit §4.1 (deceleration lottery)',
+    ],
+    inputs: ['distance_ly', 'cruise_c', 'terminal_approach', 'target'],
+    compliance_flags: ['canon', 'feasibility'],
+  },
+  nt_vat_feasibility: {
+    slug: 'feasibility',
+    title: 'New Tripoli vat feasibility (Landauer digital-mind pricing vs Sahara cap)',
+    description: 'Computes the total power draw of a New Tripoli population split between biological brains (20 W × acceleration × support overhead) and digital minds (Landauer-priced at 10^fidelity irreversible bit-ops/s), then compares it to the Sahara solar cap (~230 TW).',
+    register: 'feasibility',
+    guest_legal: false,
+    permalink_path: 'ch-sims/sims/feasibility.html',
+    citations: [
+      'Cognitive Husbandry.md — Technical Feasibility (Brain in a Vat)',
+      'Canon - New Tripoli.md §26 (90/10 substrate split)',
+      'Feasibility Audit §5 (Landauer floor)',
+    ],
+    inputs: ['pop_billions', 'bio_pct', 'accel', 'aug_stage', 'digital_fidelity_ops'],
+    compliance_flags: ['feasibility', 'canon'],
+  },
+  nt_acceleration_ceiling: {
+    slug: 'acceleration-ceiling',
+    title: 'New Tripoli acceleration ceiling by augmentation stage',
+    description: 'Computes the subjective-time acceleration ceiling for a given New Tripoli augmentation stage (vat / sensory / metabolic / synaptic / hybrid / upload), returning the floor, ceiling, and midpoint of that stage\'s plausible acceleration range, the biological thermal load at the midpoint (20 W × acceleration; null once the stage is non-biological, above 1000×), the subjective years lived at the midpoint over a given wall-clock span, and the stage\'s named bottleneck.',
+    register: 'feasibility',
+    guest_legal: true,
+    permalink_path: 'ch-sims/sims/acceleration-ceiling.html',
+    citations: [
+      'Cognitive Husbandry.md — Technical Feasibility (augmentation spectrum)',
+      'Feasibility Audit §4.8 (acceleration ceiling by substrate)',
+    ],
+    inputs: ['stage', 'wall_clock_yr'],
+    compliance_flags: ['feasibility'],
+  },
+  nt_comms_lag: {
+    slug: 'comms-lag',
+    title: 'New Tripoli comms lag between subjective-time rates',
+    description: 'Computes round-trip communications lag between two parties running at different subjective-time acceleration rates, given a wall-clock speed-of-light latency.',
+    register: 'canon',
+    guest_legal: true,
+    permalink_path: 'ch-sims/sims/comms-lag.html',
+    citations: [
+      'Canon - New Tripoli.md §30 (New Centauri — contact-list problem)',
+      'Canon - New Tripoli.md §18 (Time Dilation)',
+      'Feasibility Audit (alpha-band perceptual frame)',
+    ],
+    inputs: ['your_rate_x', 'their_rate_x', 'latency_ms'],
+    compliance_flags: ['canon', 'feasibility'],
+  },
+  nt_ring_density: {
+    slug: 'ring-density',
+    title: 'New Tripoli orbital ring housing density',
+    description: 'Computes housing capacity of the New Tripoli orbital ring plus core habitat, given ring depth, per-person area allowance, floor count, and core population.',
+    register: 'canon',
+    guest_legal: true,
+    permalink_path: 'ch-sims/sims/ring-density.html',
+    citations: [
+      'Canon - New Tripoli.md §5 (ring & housing geometry / population)',
+    ],
+    inputs: ['ring_depth_m', 'area_per_person_m2', 'floors', 'core_millions'],
+    compliance_flags: ['canon'],
+  },
+  nt_birthday_sacrifice: {
+    slug: 'birthday-sacrifice',
+    title: 'New Tripoli birthday-sacrifice subjective time cost',
+    description: 'Computes the subjective time you and a family member accrue under different simulated dilation rates over a given calendar span, plus the per-year subjective-time cost of the gap and the equivalent number of 6-month Tripoli blocks that cost represents.',
+    register: 'canon',
+    guest_legal: true,
+    permalink_path: 'ch-sims/sims/birthday-sacrifice.html',
+    citations: [
+      'Canon - New Tripoli.md §18 (Time Dilation / doubling schedules)',
+      'Canon - New Tripoli.md §9 (Universal Sabbath cadence)',
+    ],
+    inputs: ['your_rate_x', 'calendar_yr', 'family_rate_x'],
+    compliance_flags: ['canon'],
+  },
+  nt_synthetic_body: {
+    slug: 'synthetic-body',
+    title: 'New Tripoli synthetic body mass',
+    description: 'Computes the mass (kg and lb), human-mass ratio, and water-buoyancy of a synthetic body skeleton built from a given material, scaled from the canon osmium reference build.',
+    register: 'canon',
+    guest_legal: true,
+    permalink_path: 'ch-sims/sims/synthetic-body.html',
+    citations: [
+      'Canon - New Tripoli.md §35/§37 (synthetic body / osmium skeleton)',
+    ],
+    inputs: ['material'],
+    compliance_flags: ['canon'],
+  },
+  nt_selection_cost: {
+    slug: 'selection-sorter',
+    title: 'New Tripoli selection cost',
+    description: 'Computes how many of the 8.1B canon population are excluded (and how many remain) under a named selection criterion for who is offered the mind-upload path (e.g. literacy, wealth, longevity).',
+    register: 'canon',
+    guest_legal: true,
+    permalink_path: 'ch-sims/sims/selection-sorter.html',
+    citations: [
+      'Cognitive Husbandry.md — The Selection Problem',
+      'Canon - New Tripoli.md §5 (population)',
+    ],
+    inputs: ['criterion'],
+    compliance_flags: ['canon'],
+  },
+  nt_interface_bandwidth: {
+    slug: 'interface-bandwidth',
+    title: 'New Tripoli brain-interface bandwidth gap',
+    description: 'Computes how far a brain-computer interface of a given channel count is from whole-brain bandwidth (~86 billion neurons).',
+    register: 'real-science',
+    guest_legal: false,
+    permalink_path: 'ch-sims/sims/interface-bandwidth.html',
+    citations: [
+      'Feasibility Audit §4.4 (interface bandwidth / the write problem)',
+      'Koch, K. et al. (2006), Current Biology 16(14):1428–1434',
+      'Neuralink PRIME study (2024+) — N1, 1,024 electrodes / 64 threads',
+    ],
+    inputs: ['channels', 'direction'],
+    compliance_flags: ['real-science'],
+  },
+  nt_tech_tree_path: {
+    slug: 'tech-tree',
+    title: 'New Tripoli post-Wake tech-tree path solver',
+    description: 'Solves the post-Wake reindustrialization dependency graph (35 nodes, tiers T0–T9, ending at a femtoscale assembler).',
+    register: 'canon',
+    guest_legal: true,
+    permalink_path: 'ch-sims/sims/tech-tree.html',
+    citations: [
+      'Canon - New Tripoli.md §34 (resource-management tech tree)',
+      'Canon - New Tripoli.md §36 (post-Wake reindustrialization of New Anasis)',
+      'Canon - New Tripoli.md §37 (femtoscale assembler)',
+    ],
+    inputs: ['built', 'target'],
+    compliance_flags: ['canon', 'feasibility'],
+  },
+  nt_provenance: {
+    slug: 'about',
+    title: 'New Tripoli chaingraph provenance manifest',
+    description: 'Emits a tamper-evident ChainGraph provenance manifest for an arbitrary sim run: echoes the declared inputs and canon citations, optionally threads to a parent artifact\'s execution_hash, and reports input/citation counts and parent linkage.',
+    register: 'real-science',
+    guest_legal: true,
+    permalink_path: 'ch-sims/about.html',
+    citations: [
+      'NEWTRIPOLI-HASHWIRE-SPEC.md §1 (OCG v0.4 artifact envelope)',
+      'OpenChainGraph spec v0.4 (chaingraph provenance manifest)',
+    ],
+    inputs: ['sim_id', 'inputs', 'canon_refs', 'parent_hash'],
+    compliance_flags: ['real-science'],
+  },
+  nt_feasibility_crosswalk: {
+    // NOTE: slug is 'feasibility-crosswalk' (NOT the basename of audit_signature.permalink,
+    // which is shared with nt_vat_feasibility's feasibility.html — this meta-tool has no page
+    // of its own). DISCOVERY-SPEC §5 explicit override to avoid a manifest.tools key collision.
+    slug: 'feasibility-crosswalk',
+    title: 'New Tripoli feasibility crosswalk (graded D1–D10 claim ledger)',
+    description: 'Grades the ten load-bearing feasibility claims (C-D1..C-D10) of the New Tripoli scenario against a single scenario config: delegates to the five physics kernels (kinetic probe, time dilation, vat feasibility, interface bandwidth, comms lag), reads their decision pointers, and emits a ledger of {claim, verdict, driver} plus verdict tallies and the binding (worst) verdict.',
+    register: 'feasibility',
+    guest_legal: false,
+    permalink_path: 'ch-sims/sims/feasibility.html',
+    citations: [
+      'Feasibility Audit §3 (claim triage), §4 (C-D1..C-D6/D9), §4.8/§5 (C-D7/D10 upload)',
+      'Canon - New Tripoli.md §26 (substrate split)',
+      'NEWTRIPOLI-CHAINS-SPEC.md §3.2 (locked D1–D10 verdict table)',
+    ],
+    inputs: [
+      'cruise_c', 'terminal_approach', 'target', 'distance_ly', 'rate_x', 'reset_months',
+      'pop_billions', 'bio_pct', 'accel', 'aug_stage', 'digital_fidelity_ops', 'channels',
+      'direction', 'your_rate_x', 'their_rate_x', 'latency_ms', 'variant',
+    ],
+    compliance_flags: ['feasibility', 'canon'],
+  },
 };
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
@@ -393,6 +597,101 @@ export const CHAINS = {
       { id: 'anchor', tool_id: 'nt_provenance',
         fields: { sim_id: 'nt_feasibility_crosswalk', inputs: {},
                   canon_refs: ['C-D1', 'C-D4', 'C-D5', 'C-D6', 'C-D7', 'C-D9', 'C-D10'], parent_hash: null } },
+    ],
+  },
+};
+
+// ---------------------------------------------------------------------------
+// DISCOVERY-SPEC §2.1 — CHAIN_META. Presentation + per-step deep-link overlay for
+// the 7 CHAINS above. Do NOT add these fields onto CHAINS steps — routePlanDigest
+// hashes JSON.stringify(cgCanon(steps)), so mutating step shape would move frozen
+// chain-goldens. `register` = the register of each chain's first step's tool
+// (mirrors `entry_tool_id`, a deterministic tie-break — no per-chain judgment call).
+// `tier` is 'L2' for the 6 mechanical seq/gated chains, 'meta' for the D1-D10
+// crosswalk fan-in. `page` is null for all 7 — no ch-sims page currently embeds a
+// live chain widget (that pattern is EXPLAINER-TEMPLATE-SPEC's embedded-live-chain-
+// widget track, sequenced separately). OUTSIDE every hash preimage.
+// ---------------------------------------------------------------------------
+export const CHAIN_META = {
+  'intake-to-arc': {
+    title: 'Intake to arc',
+    description: 'The whole scenario as a 4-step delivery→power→dilation→thermal pipeline; no gate, terminal verdict = weakest link.',
+    register: 'canon',
+    tier: 'L2',
+    page: null,
+    steps: [
+      { tool_id: 'nt_kinetic_probe',        slug: 'kinetic-probe',        handoff: 'Export the probe result, then open step 2 (power).' },
+      { tool_id: 'nt_vat_feasibility',      slug: 'feasibility',          handoff: 'Export the power result, then open step 3 (dilation).' },
+      { tool_id: 'nt_time_dilation',        slug: 'time-dilation',        handoff: 'Export the dilation result, then open step 4 (thermal).' },
+      { tool_id: 'nt_acceleration_ceiling', slug: 'acceleration-ceiling', handoff: 'Final step — export the Policy Mandate for your audit trail.' },
+    ],
+  },
+  'deceleration-lottery': {
+    title: 'Deceleration lottery',
+    description: 'The D1 delivery fix as a fast-fail decision: gates on the kinetic probe\'s own /branch label (vaporized/destroyed → end; survives → anchor provenance).',
+    register: 'canon',
+    tier: 'L2',
+    page: null,
+    steps: [
+      { tool_id: 'nt_kinetic_probe', slug: 'kinetic-probe', handoff: 'If the probe survives (B_survives), export and open step 2 to anchor provenance. A vaporized/destroyed branch ends the chain here.' },
+      { tool_id: 'nt_provenance',    slug: 'about',         handoff: 'Final step — export the Policy Mandate for your audit trail.' },
+    ],
+  },
+  'substrate-decision': {
+    title: 'Substrate decision',
+    description: 'The D10 → D7 hinge: gates on time dilation\'s /upload_required flag (biological holds → end; upload required → anchor provenance).',
+    register: 'canon',
+    tier: 'L2',
+    page: null,
+    steps: [
+      { tool_id: 'nt_time_dilation', slug: 'time-dilation', handoff: 'If upload_required is true, export and open step 2 to anchor provenance. A_biological_holds ends the chain here.' },
+      { tool_id: 'nt_provenance',    slug: 'about',         handoff: 'Final step — export the Policy Mandate for your audit trail.' },
+    ],
+  },
+  'energy-envelope': {
+    title: 'Energy envelope',
+    description: '"Can it actually run": gates on vat feasibility\'s /sahara_pct (over capacity → end, binding constraint = power; feasible → interface, then thermal).',
+    register: 'feasibility',
+    tier: 'L2',
+    page: null,
+    steps: [
+      { tool_id: 'nt_vat_feasibility',      slug: 'feasibility',          handoff: 'If Sahara capacity is exceeded, the chain ends here (binding constraint = power). Otherwise export and open step 2 (interface).' },
+      { tool_id: 'nt_interface_bandwidth',  slug: 'interface-bandwidth',  handoff: 'Export the interface result, then open step 3 (thermal).' },
+      { tool_id: 'nt_acceleration_ceiling', slug: 'acceleration-ceiling', handoff: 'Final step — export the Policy Mandate for your audit trail.' },
+    ],
+  },
+  'friendship-across-tiers': {
+    title: 'Friendship across tiers',
+    description: 'The physics of friendship: two dilated parties running at different subjective-time rates, plus the comms budget across the gap.',
+    register: 'canon',
+    tier: 'L2',
+    page: null,
+    steps: [
+      { tool_id: 'nt_time_dilation', slug: 'time-dilation', handoff: 'Export your dilation result, then open step 2 for the other party.' },
+      { tool_id: 'nt_time_dilation', slug: 'time-dilation', handoff: 'Export their dilation result, then open step 3 (comms lag).' },
+      { tool_id: 'nt_comms_lag',     slug: 'comms-lag',     handoff: 'Final step — export the Policy Mandate for your audit trail.' },
+    ],
+  },
+  'provenance-anchor': {
+    title: 'Provenance anchor',
+    description: 'The OCG backbone every other chain terminates into: any tool\'s run, threaded to a provenance-manifest anchor.',
+    register: 'canon',
+    tier: 'L2',
+    page: null,
+    steps: [
+      { tool_id: 'nt_time_dilation', slug: 'time-dilation', handoff: 'Export the source result, then open step 2 to anchor provenance.' },
+      { tool_id: 'nt_provenance',    slug: 'about',         handoff: 'Final step — export the Policy Mandate for your audit trail.' },
+    ],
+  },
+  'feasibility-audit-crosswalk': {
+    title: 'Feasibility audit crosswalk',
+    description: 'The meta fan-in: grades all C-D1..C-D10 claims against a single scenario config, then anchors provenance unless the binding verdict is Barred.',
+    register: 'feasibility',
+    tier: 'meta',
+    page: null,
+    steps: [
+      { tool_id: 'nt_feasibility_crosswalk', slug: 'feasibility-crosswalk', handoff: 'If the binding_verdict is Barred, the chain ends here (do not anchor a "passing" run). Otherwise export and open step 2 to anchor provenance.' },
+      { tool_id: 'nt_provenance',            slug: 'about',                 handoff: 'Final step — export the Policy Mandate for your audit trail.' },
     ],
   },
 };
@@ -540,6 +839,33 @@ export async function runChain(chainTitle, steps) {
   };
 }
 
+// Vendored verbatim from AINumbers mcp-apps-poc/worker.mjs (bm25Search @808) —
+// DISCOVERY-SPEC §6. Workers-runtime safe (no Node APIs). Scores manifest.search.
+// {tools,chains} indexes (built by generate.mjs's buildBM25, same formula).
+function bm25Search(query, index, { k1 = 1.2, b = 0.75, topN = 5 } = {}) {
+  const terms = query.toLowerCase()
+    .replace(/[^a-z0-9_-]/g, ' ')
+    .split(/\s+/)
+    .filter(t => t.length > 1);
+  if (!terms.length) return index.docs.slice(0, topN).map(d => ({ ...d, _score: 0 }));
+  const { docs, tfs, docLengths, avgDocLength, idf } = index;
+  const scores = new Array(docs.length).fill(0);
+  for (const t of terms) {
+    const idfScore = idf[t] ?? 0;
+    if (!idfScore) continue;
+    for (let i = 0; i < docs.length; i++) {
+      const tf = tfs[i][t] ?? 0;
+      if (!tf) continue;
+      scores[i] += idfScore * (tf * (k1 + 1)) / (tf + k1 * (1 - b + b * docLengths[i] / avgDocLength));
+    }
+  }
+  return docs
+    .map((doc, i) => ({ ...doc, _score: scores[i] }))
+    .filter(d => d._score > 0)
+    .sort((a, b2) => b2._score - a._score)
+    .slice(0, topN);
+}
+
 // ---------------------------------------------------------------------------
 // buildServer — called per request; manifest already loaded + cached.
 // Registers the generic dispatch/discovery/hash tools only. NT physics tools
@@ -584,13 +910,16 @@ function buildServer(manifest) {
       .slice(0, limit ?? 20)
       .map(([slug, t]) => ({
         slug,
+        tool_id:  t.tool_id,
+        mandate:  t.mandate,
         title:    t.title,
         category: t.category,
         register: t.register,
+        guest_legal: t.guest_legal,
         prefill:  true,
         url:      BASE_URL + '/' + t.path,
         description: t.description.slice(0, 180),
-        inputs:   Object.keys(t.inputs ?? {}),
+        inputs:   t.inputs ?? [],
         hashNote: t.hashNote ?? null,
         citations: t.citations ?? [],
       }));
@@ -712,6 +1041,75 @@ function buildServer(manifest) {
     return {
       content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
       structuredContent: output,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // find_tool / find_chain — DISCOVERY-SPEC §3.2/§3.3. BM25 discovery layer over
+  // manifest.search.{tools,chains} (precomputed by generate.mjs). Vendored
+  // register shape from AINumbers mcp-apps-poc/worker.mjs find_tool/find_chain
+  // @2072-2097, NT-swapped to the tool/chain counts + cross-references.
+  // -------------------------------------------------------------------------
+  const search = manifest.search ?? { tools: { docs: [] }, chains: { docs: [] } };
+
+  server.registerTool('find_tool', {
+    title: 'Find New Tripoli tool',
+    description:
+      'BM25 search over all ' + Object.keys(tools).length + ' New Tripoli MCP tools. ' +
+      'Returns ranked tools with tool_id, mandate, register, guest_legal flag, and deep-link URL. ' +
+      'Use to locate a specific instrument (e.g. "time dilation", "kinetic probe delivery", ' +
+      '"vat feasibility power draw", "selection cost") before calling it or opening its deep-link. ' +
+      'Complements find_chain (chain-level) and list_newtripoli_tools (catalog-level).',
+    inputSchema: {
+      query: z.string().describe('Natural-language or keyword search (e.g. "time dilation", "brain interface bandwidth", "tech tree").'),
+      top_n: z.number().min(1).max(20).optional().describe('Max results to return (default 5).'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, ({ query, top_n }) => {
+    const results = bm25Search(query, search.tools, { topN: top_n ?? 5 });
+    if (!results.length) {
+      return {
+        content: [{ type: 'text', text: 'No tools matched "' + query + '". Try find_chain for workflow-level search or list_newtripoli_tools for the full catalog.' }],
+        structuredContent: { query, result_count: 0, tools: [], hint: 'No matches — try find_chain or list_newtripoli_tools.' },
+      };
+    }
+    const out = results.map(({ _score, ...r }) => ({ ...r, relevance_score: Math.round(_score * 1000) / 1000 }));
+    return {
+      content: [{ type: 'text', text: JSON.stringify(out, null, 2) }],
+      structuredContent: { query, result_count: out.length, tools: out },
+    };
+  });
+
+  server.registerTool('find_chain', {
+    title: 'Find New Tripoli workflow chain',
+    description:
+      'BM25 search over all ' + CHAIN_NAMES.length + ' New Tripoli scenario chains. ' +
+      'Returns ranked chains with their full recipe: ordered step sequence, deep-links, and handoff notes. ' +
+      'Agent flow: find_chain(query) → read recipe → either call run_chain(chain=<chain_name>) for ' +
+      'server-side execution, or open each step\'s url in order (browser tools), threading each step\'s ' +
+      'execution_hash into the next as parent_hashes. Verify any artifact with verify_execution_hash.',
+    inputSchema: {
+      query: z.string().describe('Natural-language or keyword search (e.g. "deceleration lottery", "upload decision", "feasibility crosswalk").'),
+      top_n: z.number().min(1).max(20).optional().describe('Max results to return (default 5).'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, ({ query, top_n }) => {
+    const results = bm25Search(query, search.chains, { topN: top_n ?? 5 });
+    if (!results.length) {
+      return {
+        content: [{ type: 'text', text: 'No chains matched "' + query + '". Try find_tool for individual tool search or list_newtripoli_tools for the full catalog.' }],
+        structuredContent: { query, result_count: 0, chains: [], hint: 'No matches — try find_tool or list_newtripoli_tools.' },
+      };
+    }
+    const out = results.map(({ _score, ...r }) => ({ ...r, relevance_score: Math.round(_score * 1000) / 1000 }));
+    return {
+      content: [{ type: 'text', text: JSON.stringify(out, null, 2) }],
+      structuredContent: {
+        query,
+        result_count: out.length,
+        chains: out,
+        usage: 'Run server-side with run_chain(chain=<chain_name>), or open each step\'s url in order (browser tools); thread each step\'s execution_hash into the next as parent_hashes; verify any artifact with verify_execution_hash.',
+      },
     };
   });
 

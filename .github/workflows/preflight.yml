@@ -82,6 +82,11 @@ jobs:
       - name: Canon-sync gate
         run: node scripts/check-canon-sync.mjs
 
+      # 4b. Manifest-sync — data/tools-manifest.json tool/chain keys, per-step order,
+      #     and mandates stay in lockstep with worker.mjs's KERNEL_REGISTRY/CHAINS.
+      - name: Manifest-sync gate
+        run: node scripts/check-manifest-sync.mjs
+
       # 5. §17 kernel-digest freshness (self-referential over worker.mjs).
       - name: §17 kernel-digest freshness
         run: node scripts/check-kernel-digest.mjs
