@@ -81,6 +81,7 @@ function buildChecks(C) {
   const rd = kernelSrc('ring-density');
   const bs = kernelSrc('birthday-sacrifice');
   const sb = kernelSrc('synthetic-body');
+  const sc = kernelSrc('selection-cost');
   const augCeil = C.feasibility.augmentation.map((a) => a.ceiling);
   return [
     ['time-dilation SERIES0_CEILING',  extractConst(td, 'SERIES0_CEILING'),  C.series[0].ceiling],
@@ -117,6 +118,10 @@ function buildChecks(C) {
     ['synthetic-body CARBON_D',   extractConst(sb, 'CARBON_D'),   C.synthBody.materials.carbonComposite],
     ['synthetic-body OSMIUM_KG',  extractConst(sb, 'OSMIUM_KG'),  C.synthBody.totalMassKg],
     ['synthetic-body HUMAN_KG',   extractConst(sb, 'HUMAN_KG'),   C.synthBody.avgHumanKg],
+    ['selection-cost TOTAL_POP', extractConst(sc, 'TOTAL_POP'), C.population.humans],
+    ['selection-cost SELECTION_CRITERIA',
+      Object.keys(C.selection.criteria).map((k) => extractConst(sc, 'SELECTION_CRITERIA')[k]),
+      Object.keys(C.selection.criteria).map((k) => C.selection.criteria[k])],
   ];
   // NOTE: kinetic-probe C_MS (2.998e8) is a flagged real-science constant, NOT in canon — SKIPPED
   // by design (assert presence + comment, not a canon diff). Presence is confirmed by node --check
