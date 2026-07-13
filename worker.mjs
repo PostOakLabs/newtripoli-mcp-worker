@@ -15,6 +15,7 @@ import { compute as vatFeasibilityCompute } from './kernels/vat-feasibility.kern
 import { compute as accelerationCeilingCompute } from './kernels/acceleration-ceiling.kernel.mjs';
 import { compute as commsLagCompute } from './kernels/comms-lag.kernel.mjs';
 import { compute as ringDensityCompute } from './kernels/ring-density.kernel.mjs';
+import { compute as birthdaySacrificeCompute } from './kernels/birthday-sacrifice.kernel.mjs';
 
 const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -267,6 +268,7 @@ const KERNEL_REGISTRY = {
   nt_acceleration_ceiling: { compute: accelerationCeilingCompute, mandate_type: 'me.newtripoli/acceleration_ceiling' },
   nt_comms_lag: { compute: commsLagCompute, mandate_type: 'me.newtripoli/comms_lag' },
   nt_ring_density: { compute: ringDensityCompute, mandate_type: 'me.newtripoli/ring_density' },
+  nt_birthday_sacrifice: { compute: birthdaySacrificeCompute, mandate_type: 'me.newtripoli/birthday_sacrifice' },
 };
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
@@ -1063,6 +1065,82 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/sims/ring-density.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // nt_birthday_sacrifice — buildplan 2.1, NEWTRIPOLI-L2-SIMLIFT-SPEC.md §4.
+  // Register: canon. Guest-legal: YES.
+  // -------------------------------------------------------------------------
+  server.registerTool('nt_birthday_sacrifice', {
+    title: 'New Tripoli birthday-sacrifice subjective time cost',
+    description:
+      'Computes the subjective time you and a family member accrue under different simulated dilation ' +
+      'rates over a given calendar span, plus the per-year subjective-time cost of the gap and the ' +
+      'equivalent number of 6-month Tripoli blocks that cost represents. Pure multiply/subtract/round/' +
+      'compare — guest-legal, zk-provable.',
+    inputSchema: {
+      your_rate_x: z.number().min(1).max(1e9).default(50).describe(
+        'Your simulated dilation rate, in multiples of real time (default 50, the New Tripoli ceiling).'
+      ),
+      calendar_yr: z.number().int().min(1).max(200).default(200).describe(
+        'Real (calendar) years elapsed (default 200).'
+      ),
+      family_rate_x: z.number().min(1).max(1e9).default(200).describe(
+        'Family member\'s simulated dilation rate, in multiples of real time (default 200, the New Pluto entry rate).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ your_rate_x, calendar_yr, family_rate_x }) => {
+    const input_parameters = {
+      your_rate_x:    your_rate_x ?? 50,
+      calendar_yr:    calendar_yr ?? 200,
+      family_rate_x:  family_rate_x ?? 200,
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = birthdaySacrificeCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/birthday_sacrifice',
+      tool_id: 'nt-birthday-sacrifice',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['canon'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'canon',
+        data_sources: [
+          'Canon - New Tripoli.md §18 (Time Dilation / doubling schedules)',
+          'Canon - New Tripoli.md §9 (Universal Sabbath cadence)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/sims/birthday-sacrifice.html',
       },
     };
     artifact.audit_signature.build_identity = {

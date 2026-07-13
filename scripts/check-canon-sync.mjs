@@ -79,6 +79,7 @@ function buildChecks(C) {
   const ac = kernelSrc('acceleration-ceiling');
   const cl = kernelSrc('comms-lag');
   const rd = kernelSrc('ring-density');
+  const bs = kernelSrc('birthday-sacrifice');
   const augCeil = C.feasibility.augmentation.map((a) => a.ceiling);
   return [
     ['time-dilation SERIES0_CEILING',  extractConst(td, 'SERIES0_CEILING'),  C.series[0].ceiling],
@@ -105,6 +106,9 @@ function buildChecks(C) {
     ['ring-density RING_CIRCUMFERENCE_KM', extractConst(rd, 'RING_CIRCUMFERENCE_KM'), C.housing.ringCircumferenceKm],
     ['ring-density SKYSCRAPER_RESIDENTS',  extractConst(rd, 'SKYSCRAPER_RESIDENTS'),  C.housing.skyscraperResidents],
     ['ring-density TARGET_POP',            extractConst(rd, 'TARGET_POP'),            C.population.humans],
+    ['birthday-sacrifice SIM_YEARS_PER_BLOCK', extractConst(bs, 'SIM_YEARS_PER_BLOCK'), C.simYearsPerBlock],
+    ['birthday-sacrifice SERIES0_CEILING',     extractConst(bs, 'SERIES0_CEILING'),     C.series[0].ceiling],
+    ['birthday-sacrifice PLUTO_START',         extractConst(bs, 'PLUTO_START'),         C.plutoDoublingSchedule[0]],
   ];
   // NOTE: kinetic-probe C_MS (2.998e8) is a flagged real-science constant, NOT in canon — SKIPPED
   // by design (assert presence + comment, not a canon diff). Presence is confirmed by node --check
