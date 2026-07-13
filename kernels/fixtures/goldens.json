@@ -2,15 +2,14 @@
   "_meta": {
     "canon_version": "2026.07.12",
     "frozen_at": "2026-07-12",
-    "parity_verified": false,
+    "parity_verified": true,
     "note": "P1 L1 goldens — bare-hex execution_hash at fixture (default) inputs. Regenerate via freeze-goldens.mjs."
   },
   "nt_time_dilation": {
     "execution_hash": "5a311b5720c29ba84f0365967ef7d524fd10662c523e12a9ab50b8066d7fe977"
   },
   "nt_kinetic_probe": {
-    "execution_hash": null,
-    "blocked": "Integer 55241482515292424 exceeds 2^53 and is not safe I-JSON; pass it as a string (RFC 7493)."
+    "execution_hash": "15d28f7b67c564329c80e97a7d3f72d4b3618fc197be00b731c52e5877ec400a"
   },
   "nt_vat_feasibility": {
     "execution_hash": "452618e63114f666d0efc45ad91976bc02230f24ea7fea0452f6bf4d3ddfc1e5"
