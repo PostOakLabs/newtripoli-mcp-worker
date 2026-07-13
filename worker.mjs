@@ -20,6 +20,7 @@ import { compute as syntheticBodyCompute } from './kernels/synthetic-body.kernel
 import { compute as selectionCostCompute } from './kernels/selection-cost.kernel.mjs';
 import { compute as interfaceBandwidthCompute } from './kernels/interface-bandwidth.kernel.mjs';
 import { compute as techTreePathCompute } from './kernels/tech-tree.kernel.mjs';
+import { compute as provenanceCompute } from './kernels/provenance.kernel.mjs';
 
 const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -277,6 +278,7 @@ const KERNEL_REGISTRY = {
   nt_selection_cost: { compute: selectionCostCompute, mandate_type: 'me.newtripoli/selection_cost' },
   nt_interface_bandwidth: { compute: interfaceBandwidthCompute, mandate_type: 'me.newtripoli/interface_bandwidth' },
   nt_tech_tree_path: { compute: techTreePathCompute, mandate_type: 'me.newtripoli/tech_tree_path' },
+  nt_provenance: { compute: provenanceCompute, mandate_type: 'me.newtripoli/provenance' },
 };
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
@@ -1434,6 +1436,88 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/sims/tech-tree.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // nt_provenance — buildplan 2.2, NEWTRIPOLI-LOG-TECHTREE-SPEC.md §3.
+  // Register: real-science. Guest-legal: YES (structural copy + count; = emit_chaingraph_artifact
+  // specialized; wraps the same HASHWIRE §5 hash path, no new hash logic).
+  // -------------------------------------------------------------------------
+  server.registerTool('nt_provenance', {
+    title: 'New Tripoli chaingraph provenance manifest',
+    description:
+      'Emits a tamper-evident ChainGraph provenance manifest for an arbitrary sim run: echoes the ' +
+      'declared inputs and canon citations, optionally threads to a parent artifact\'s execution_hash, ' +
+      'and reports input/citation counts and parent linkage. Meta-tool = emit_chaingraph_artifact ' +
+      'specialized; the worker wraps the standard execution-hash path so the manifest is itself ' +
+      'hash-bound. Pure structural copy + count — guest-legal.',
+    inputSchema: {
+      sim_id: z.string().default('nt_time_dilation').describe(
+        'The sim/tool id this manifest describes (default nt_time_dilation).'
+      ),
+      inputs: z.record(z.any()).default({}).describe(
+        'The sim\'s declared input_parameters, echoed verbatim into the manifest (default {}).'
+      ),
+      canon_refs: z.array(z.string()).default([]).describe(
+        'Canon/Audit section citations for this run (default []).'
+      ),
+      parent_hash: z.string().nullable().default(null).describe(
+        'Prior artifact\'s execution_hash to thread provenance, or null (default null).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ sim_id, inputs, canon_refs, parent_hash }) => {
+    const input_parameters = {
+      sim_id:      sim_id ?? 'nt_time_dilation',
+      inputs:      inputs ?? {},
+      canon_refs:  canon_refs ?? [],
+      parent_hash: parent_hash ?? null,
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = provenanceCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/provenance',
+      tool_id: 'nt-provenance',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['real-science'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'real-science',
+        data_sources: [
+          'NEWTRIPOLI-HASHWIRE-SPEC.md §1 (OCG v0.4 artifact envelope)',
+          'OpenChainGraph spec v0.4 (chaingraph provenance manifest)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/about.html',
       },
     };
     artifact.audit_signature.build_identity = {
