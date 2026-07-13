@@ -21,7 +21,7 @@ const out = {
     canon_version,
     frozen_at: '2026-07-12',
     parity_verified: parityVerified,
-    note: 'P1 L1 goldens — bare-hex execution_hash at fixture (default) inputs. Regenerate via freeze-goldens.mjs.',
+    note: '12 tool goldens (3 L1 + 9 L2) — bare-hex execution_hash at fixture (default) inputs. Regenerate via freeze-goldens.mjs.',
   },
 };
 for (const t of TOOLS) {

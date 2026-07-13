@@ -38,7 +38,7 @@ const NT_ARTIFACT_VERSION = '1.0.0';
 // OCG Standard §17 (Kernel Identity Binding) — content digest of this file, computed by
 // generate.mjs over the LF-normalized source with this line's value replaced by the literal
 // 'PLACEHOLDER'. Populated by `node generate.mjs`; idempotent (re-running yields no diff).
-const KERNEL_DIGEST = 'sha256:86ab52c73bce1703d072aaa9393e2c495346283bcae2e5a75c4b18c6ce312cd3';
+const KERNEL_DIGEST = 'sha256:d027061bc843e19fa2efa16ba79a0160b54698552b8296fbfa03f2a361936dd2';
 
 // Vendored from AINumbers ChainGraph SSOT kernels/_hash.mjs (OCG Standard §4 JCS).
 // Namespace adapted for me.newtripoli. Recursive key sort + per-value

@@ -15,14 +15,32 @@ import { executionHash } from '../lib/_hash.mjs';
 import { compute as timeDilationCompute } from '../kernels/time-dilation.kernel.mjs';
 import { compute as kineticProbeCompute } from '../kernels/kinetic-probe.kernel.mjs';
 import { compute as vatFeasibilityCompute } from '../kernels/vat-feasibility.kernel.mjs';
+import { compute as accelerationCeilingCompute } from '../kernels/acceleration-ceiling.kernel.mjs';
+import { compute as commsLagCompute }            from '../kernels/comms-lag.kernel.mjs';
+import { compute as ringDensityCompute }         from '../kernels/ring-density.kernel.mjs';
+import { compute as birthdaySacrificeCompute }   from '../kernels/birthday-sacrifice.kernel.mjs';
+import { compute as syntheticBodyCompute }       from '../kernels/synthetic-body.kernel.mjs';
+import { compute as selectionCostCompute }       from '../kernels/selection-cost.kernel.mjs';
+import { compute as interfaceBandwidthCompute }  from '../kernels/interface-bandwidth.kernel.mjs';
+import { compute as techTreePathCompute }        from '../kernels/tech-tree.kernel.mjs';
+import { compute as provenanceCompute }          from '../kernels/provenance.kernel.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
-// tool id → { slug, compute } — the three P1 L1 tools.
+// tool id → { slug, compute } — all 12 tools (3 L1 + 9 L2), master-table order (spec §0.1).
 export const TOOLS = [
-  { id: 'nt_time_dilation',   slug: 'time-dilation',   compute: timeDilationCompute },
-  { id: 'nt_kinetic_probe',   slug: 'kinetic-probe',   compute: kineticProbeCompute },
-  { id: 'nt_vat_feasibility', slug: 'vat-feasibility', compute: vatFeasibilityCompute },
+  { id: 'nt_time_dilation',        slug: 'time-dilation',        compute: timeDilationCompute },
+  { id: 'nt_kinetic_probe',        slug: 'kinetic-probe',        compute: kineticProbeCompute },
+  { id: 'nt_vat_feasibility',      slug: 'vat-feasibility',      compute: vatFeasibilityCompute },
+  { id: 'nt_acceleration_ceiling', slug: 'acceleration-ceiling', compute: accelerationCeilingCompute },
+  { id: 'nt_comms_lag',            slug: 'comms-lag',            compute: commsLagCompute },
+  { id: 'nt_ring_density',         slug: 'ring-density',         compute: ringDensityCompute },
+  { id: 'nt_birthday_sacrifice',   slug: 'birthday-sacrifice',   compute: birthdaySacrificeCompute },
+  { id: 'nt_synthetic_body',       slug: 'synthetic-body',       compute: syntheticBodyCompute },
+  { id: 'nt_selection_cost',       slug: 'selection-cost',       compute: selectionCostCompute },
+  { id: 'nt_interface_bandwidth',  slug: 'interface-bandwidth',  compute: interfaceBandwidthCompute },
+  { id: 'nt_tech_tree_path',       slug: 'tech-tree',            compute: techTreePathCompute },
+  { id: 'nt_provenance',           slug: 'provenance',           compute: provenanceCompute },
 ];
 
 export function workerCanonVersion() {
