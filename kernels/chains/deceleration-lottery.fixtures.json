@@ -1,0 +1,23 @@
+{
+  "chain": "deceleration-lottery",
+  "cases": [
+    {
+      "branch": "B_survives",
+      "step_overrides": {},
+      "expected_path_taken": ["probe", "anchor"],
+      "expected_composite_hash": null
+    },
+    {
+      "branch": "A_vaporized",
+      "step_overrides": { "probe": { "terminal_approach": "passive" } },
+      "expected_path_taken": ["probe"],
+      "expected_composite_hash": null
+    },
+    {
+      "branch": "destroyed_no_surface",
+      "step_overrides": { "probe": { "target": "gas giant" } },
+      "expected_path_taken": ["probe"],
+      "expected_composite_hash": null
+    }
+  ]
+}

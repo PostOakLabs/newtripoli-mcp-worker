@@ -1,0 +1,17 @@
+{
+  "chain": "energy-envelope",
+  "cases": [
+    {
+      "branch": "feasible",
+      "step_overrides": {},
+      "expected_path_taken": ["power", "interface", "thermal"],
+      "expected_composite_hash": null
+    },
+    {
+      "branch": "over_capacity",
+      "step_overrides": { "power": { "pop_billions": 100000 } },
+      "expected_path_taken": ["power"],
+      "expected_composite_hash": null
+    }
+  ]
+}

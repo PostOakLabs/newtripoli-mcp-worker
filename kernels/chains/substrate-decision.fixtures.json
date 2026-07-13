@@ -1,0 +1,17 @@
+{
+  "chain": "substrate-decision",
+  "cases": [
+    {
+      "branch": "A_biological_holds",
+      "step_overrides": {},
+      "expected_path_taken": ["dilate"],
+      "expected_composite_hash": null
+    },
+    {
+      "branch": "B_upload_required",
+      "step_overrides": { "dilate": { "rate_x": 200 } },
+      "expected_path_taken": ["dilate", "upload"],
+      "expected_composite_hash": null
+    }
+  ]
+}

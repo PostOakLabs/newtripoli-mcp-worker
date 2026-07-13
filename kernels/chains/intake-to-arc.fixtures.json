@@ -1,0 +1,11 @@
+{
+  "chain": "intake-to-arc",
+  "cases": [
+    {
+      "branch": "default",
+      "step_overrides": {},
+      "expected_path_taken": ["probe", "power", "dilate", "thermal"],
+      "expected_composite_hash": null
+    }
+  ]
+}

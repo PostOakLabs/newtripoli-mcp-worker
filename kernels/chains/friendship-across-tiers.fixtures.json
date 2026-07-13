@@ -1,0 +1,11 @@
+{
+  "chain": "friendship-across-tiers",
+  "cases": [
+    {
+      "branch": "default",
+      "step_overrides": {},
+      "expected_path_taken": ["you", "them", "comms"],
+      "expected_composite_hash": null
+    }
+  ]
+}

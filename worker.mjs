@@ -291,8 +291,89 @@ async function routePlanDigest(steps) {
 }
 
 // Named chains (OCG §21.1/§21.4). Mirrored as fixtures under kernels/chains/.
-// EMPTY in 1.2 — NT authors its own chains in buildplan 2.5.
-export const CHAINS = {};
+// The six mechanical seq/gated chains (buildplan §2.5 / CHAINS-SPEC §2).
+// The meta chain `feasibility-audit-crosswalk` is added by CROSSWALK.build.
+// Steps reference KERNEL_REGISTRY tool_ids only; baked `fields` = fixture defaults
+// (CHAINS-SPEC §1). Gates read RFC-6901 pointers into the step's output_payload;
+// `next`/`default` are forward-only step ids or the 'end' sentinel.
+export const CHAINS = {
+  // §2.1 — the whole scenario as a 4-step pipeline; no gate, terminal verdict = weakest link.
+  'intake-to-arc': {
+    title: 'intake-to-arc',
+    steps: [
+      { id: 'probe',   tool_id: 'nt_kinetic_probe',        fields: { distance_ly: 7500, cruise_c: 0.10, terminal_approach: 'staged', target: 'terrestrial planet' } },
+      { id: 'power',   tool_id: 'nt_vat_feasibility',      fields: { pop_billions: 8.1, bio_pct: 10, accel: 1, aug_stage: 'vat', digital_fidelity_ops: 20 } },
+      { id: 'dilate',  tool_id: 'nt_time_dilation',        fields: { rate_x: 50, reset_months: 6 } },
+      { id: 'thermal', tool_id: 'nt_acceleration_ceiling', fields: { stage: 'vat', wall_clock_yr: 20 } },
+    ],
+  },
+
+  // §2.2 — the D1 delivery fix as a fast-fail decision. Gate on the kernel's own
+  // /branch label (folds in target_is_solid + terminal_approach; do not re-derive).
+  'deceleration-lottery': {
+    title: 'deceleration-lottery',
+    steps: [
+      { id: 'probe',  tool_id: 'nt_kinetic_probe', fields: { distance_ly: 7500, cruise_c: 0.10, terminal_approach: 'staged', target: 'terrestrial planet' },
+        gate: {
+          input: '/branch',
+          rules: [
+            { op: 'eq', value: 'A_vaporized',          next: 'end' },
+            { op: 'eq', value: 'destroyed_no_surface', next: 'end' },
+          ],
+          default: 'anchor', // B_survives → continue
+        } },
+      { id: 'anchor', tool_id: 'nt_provenance', fields: { sim_id: 'nt_kinetic_probe', inputs: {}, canon_refs: ['C-D1'], parent_hash: null } },
+    ],
+  },
+
+  // §2.3 — the D10 → D7 hinge: biological continuity vs upload.
+  'substrate-decision': {
+    title: 'substrate-decision',
+    steps: [
+      { id: 'dilate', tool_id: 'nt_time_dilation', fields: { rate_x: 50, reset_months: 6 },
+        gate: {
+          input: '/upload_required',
+          rules: [ { op: 'eq', value: false, next: 'end' } ], // A_biological_holds
+          default: 'upload',                                   // true → B_upload_required
+        } },
+      { id: 'upload', tool_id: 'nt_provenance', fields: { sim_id: 'nt_time_dilation', inputs: {}, canon_refs: ['C-D7', 'C-D10'], parent_hash: null } },
+    ],
+  },
+
+  // §2.4 — "can it actually run": returns the binding constraint (power vs interface vs thermal).
+  'energy-envelope': {
+    title: 'energy-envelope',
+    steps: [
+      { id: 'power',     tool_id: 'nt_vat_feasibility', fields: { pop_billions: 8.1, bio_pct: 10, accel: 1, aug_stage: 'vat', digital_fidelity_ops: 20 },
+        gate: {
+          input: '/sahara_pct',
+          rules: [ { op: 'lte', value: 100, next: 'interface' } ], // feasible → continue
+          default: 'end',                                          // over_capacity → binding constraint = POWER
+        } },
+      { id: 'interface', tool_id: 'nt_interface_bandwidth',  fields: { channels: 1024, direction: 'read' } },
+      { id: 'thermal',   tool_id: 'nt_acceleration_ceiling', fields: { stage: 'vat', wall_clock_yr: 20 } },
+    ],
+  },
+
+  // §2.5 — the physics of friendship: two dilated parties + the comms budget across the gap.
+  'friendship-across-tiers': {
+    title: 'friendship-across-tiers',
+    steps: [
+      { id: 'you',   tool_id: 'nt_time_dilation', fields: { rate_x: 50,      reset_months: 6 } },
+      { id: 'them',  tool_id: 'nt_time_dilation', fields: { rate_x: 1000000, reset_months: 6 } },
+      { id: 'comms', tool_id: 'nt_comms_lag',     fields: { your_rate_x: 50, their_rate_x: 1000000, latency_ms: 50 } },
+    ],
+  },
+
+  // §2.6 — the OCG backbone every other chain terminates into (any tool → provenance anchor).
+  'provenance-anchor': {
+    title: 'provenance-anchor',
+    steps: [
+      { id: 'source', tool_id: 'nt_time_dilation', fields: { rate_x: 50, reset_months: 6 } },
+      { id: 'anchor', tool_id: 'nt_provenance',    fields: { sim_id: 'nt_time_dilation', inputs: {}, canon_refs: ['provenance'], parent_hash: null } },
+    ],
+  },
+};
 
 // ---------------------------------------------------------------------------
 // runChain — OCG §21 linear-model chain executor with §21.4 decision gates.

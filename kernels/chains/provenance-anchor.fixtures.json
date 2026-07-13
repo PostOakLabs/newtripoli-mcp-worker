@@ -1,0 +1,11 @@
+{
+  "chain": "provenance-anchor",
+  "cases": [
+    {
+      "branch": "default",
+      "step_overrides": {},
+      "expected_path_taken": ["source", "anchor"],
+      "expected_composite_hash": null
+    }
+  ]
+}
