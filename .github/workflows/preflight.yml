@@ -141,9 +141,14 @@ jobs:
 
   # ── Post-deploy smoke ───────────────────────────────────────────────────────
   # Assert the LIVE /mcp handshake works and serves the kernel tools this build
-  # registered. Expected kernel-tool count is read from the committed worker.mjs
-  # itself (Object.keys(KERNEL_REGISTRY).length) rather than hardcoded, so this
-  # job stays correct as sec2.6 alt-history kernels land (13 -> 18) without an edit.
+  # registered. Expected kernel-tool names are read from the committed
+  # data/tools-manifest.json (generate.mjs emits it from KERNEL_REGISTRY), NOT by
+  # importing worker.mjs — worker.mjs imports @modelcontextprotocol/sdk at module
+  # scope and this job runs no `npm ci`, so an import throws ERR_MODULE_NOT_FOUND
+  # even when the live deploy is healthy. Mirrors ocs-mcp-worker + ainumbers smoke
+  # jobs (read count from a committed generated data file, never from worker.mjs).
+  # Regenerating the manifest self-updates the count (13 -> 18 when alt-history
+  # kernels land) with no edit here.
   smoke:
     name: Post-deploy MCP smoke
     needs: deploy
@@ -170,16 +175,25 @@ jobs:
           sleep 15
 
           mcp_call () {  # $1 = json-rpc body ; writes parsed JSON to $2
-            local body="$1" out="$2" raw status
-            raw=$(curl -s -w '\n%{http_code}' -X POST "$ENDPOINT" \
-                    -H "Content-Type: application/json" -H "Accept: ${ACCEPT}" \
-                    --max-time 25 --retry 3 --retry-delay 6 -d "$body")
-            status=$(printf '%s' "$raw" | tail -1)
-            body_raw=$(printf '%s' "$raw" | sed '$d')
-            if [ "$status" != "200" ]; then
+            local body="$1" out="$2" raw status body_raw attempt=0 max=5
+            # Cloudflare WAF rate-limits /mcp (per-IP). curl --retry does not reliably
+            # retry 429, so loop explicitly on 429/503/000 (mirrors ainumbers ci.yml).
+            while :; do
+              raw=$(curl -s -w '\n%{http_code}' -X POST "$ENDPOINT" \
+                      -H "Content-Type: application/json" -H "Accept: ${ACCEPT}" \
+                      --max-time 25 -d "$body")
+              status=$(printf '%s' "$raw" | tail -1)
+              body_raw=$(printf '%s' "$raw" | sed '$d')
+              if [ "$status" = "200" ]; then break; fi
+              if { [ "$status" = "429" ] || [ "$status" = "503" ] || [ "$status" = "000" ]; } && [ "$attempt" -lt "$max" ]; then
+                attempt=$((attempt + 1))
+                echo "WAF/transient HTTP $status from $ENDPOINT — retry $attempt/$max after 6s" >&2
+                sleep 6
+                continue
+              fi
               echo "::error::$out: HTTP $status from $ENDPOINT"
               exit 1
-            fi
+            done
             # Streamable-HTTP replies as SSE ("data: {…}") or plain JSON — normalise.
             printf '%s' "$body_raw" | sed -n 's/^data: //p' | head -1 > "$out"
             [ -s "$out" ] || printf '%s' "$body_raw" > "$out"
@@ -198,8 +212,13 @@ jobs:
               }
               console.log("OK  initialize handshake:", init.result.serverInfo.name);
 
-              const { KERNEL_REGISTRY } = await import("./worker.mjs");
-              const expectedKernelNames = new Set(Object.keys(KERNEL_REGISTRY));
+              // Expected kernel-tool names come from the COMMITTED data/tools-manifest.json
+              // (generate.mjs emits it from KERNEL_REGISTRY). We deliberately do NOT import
+              // worker.mjs — it imports @modelcontextprotocol/sdk at module scope and this
+              // job runs no `npm ci`, so the import throws ERR_MODULE_NOT_FOUND even on a
+              // healthy deploy. Mirrors ocs-mcp-worker + ainumbers smoke jobs.
+              const manifest = JSON.parse(readFileSync("data/tools-manifest.json", "utf8"));
+              const expectedKernelNames = new Set(Object.values(manifest.tools).map(t => t.tool_id));
               const expectedKernelCount = expectedKernelNames.size;
 
               const list = JSON.parse(readFileSync("/tmp/list.json", "utf8"));
@@ -211,6 +230,6 @@ jobs:
                 console.error(`::error::live /mcp exposes ${liveKernelNames.length}/${expectedKernelCount} committed kernel tools (missing: ${missing.join(", ") || "none"})`);
                 process.exit(1);
               }
-              console.log(`OK  kernel tools live: ${liveKernelNames.length}/${expectedKernelCount} == committed KERNEL_REGISTRY`);
+              console.log(`OK  kernel tools live: ${liveKernelNames.length}/${expectedKernelCount} == committed data/tools-manifest.json`);
             })();
           '
