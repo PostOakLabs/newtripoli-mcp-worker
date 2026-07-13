@@ -14,6 +14,7 @@ import { compute as kineticProbeCompute } from './kernels/kinetic-probe.kernel.m
 import { compute as vatFeasibilityCompute } from './kernels/vat-feasibility.kernel.mjs';
 import { compute as accelerationCeilingCompute } from './kernels/acceleration-ceiling.kernel.mjs';
 import { compute as commsLagCompute } from './kernels/comms-lag.kernel.mjs';
+import { compute as ringDensityCompute } from './kernels/ring-density.kernel.mjs';
 
 const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -265,6 +266,7 @@ const KERNEL_REGISTRY = {
   nt_vat_feasibility: { compute: vatFeasibilityCompute, mandate_type: 'me.newtripoli/vat_feasibility' },
   nt_acceleration_ceiling: { compute: accelerationCeilingCompute, mandate_type: 'me.newtripoli/acceleration_ceiling' },
   nt_comms_lag: { compute: commsLagCompute, mandate_type: 'me.newtripoli/comms_lag' },
+  nt_ring_density: { compute: ringDensityCompute, mandate_type: 'me.newtripoli/ring_density' },
 };
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
@@ -981,6 +983,86 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/sims/comms-lag.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // nt_ring_density — buildplan 2.1, NEWTRIPOLI-L2-SIMLIFT-SPEC.md §3.
+  // Register: canon. Guest-legal: YES.
+  // -------------------------------------------------------------------------
+  server.registerTool('nt_ring_density', {
+    title: 'New Tripoli orbital ring housing density',
+    description:
+      'Computes housing capacity of the New Tripoli orbital ring plus core habitat, given ring depth, ' +
+      'per-person area allowance, floor count, and core population. Returns ring capacity, core ' +
+      'residents, total housed, percent of target population housed, shortfall, density per km², and ' +
+      'whether the target population is fully housed. Pure multiply/divide/add/compare — guest-legal, ' +
+      'zk-provable.',
+    inputSchema: {
+      ring_depth_m: z.number().min(200).max(10000).default(200).describe(
+        'Ring habitat depth in meters (default 200).'
+      ),
+      area_per_person_m2: z.number().min(10).max(200).default(70).describe(
+        'Floor area allotted per person in square meters (default 70).'
+      ),
+      floors: z.number().int().min(3).max(24).default(12).describe(
+        'Number of stacked floors in the ring habitat (default 12).'
+      ),
+      core_millions: z.number().min(0).max(400).default(300).describe(
+        'Core habitat population, in millions (default 300).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ ring_depth_m, area_per_person_m2, floors, core_millions }) => {
+    const input_parameters = {
+      ring_depth_m:        ring_depth_m ?? 200,
+      area_per_person_m2:  area_per_person_m2 ?? 70,
+      floors:               floors ?? 12,
+      core_millions:        core_millions ?? 300,
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = ringDensityCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/ring_density',
+      tool_id: 'nt-ring-density',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['canon'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'canon',
+        data_sources: [
+          'Canon - New Tripoli.md §5 (ring & housing geometry / population)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/sims/ring-density.html',
       },
     };
     artifact.audit_signature.build_identity = {

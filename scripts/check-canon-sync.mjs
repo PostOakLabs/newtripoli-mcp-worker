@@ -78,6 +78,7 @@ function buildChecks(C) {
   const vf = kernelSrc('vat-feasibility');
   const ac = kernelSrc('acceleration-ceiling');
   const cl = kernelSrc('comms-lag');
+  const rd = kernelSrc('ring-density');
   const augCeil = C.feasibility.augmentation.map((a) => a.ceiling);
   return [
     ['time-dilation SERIES0_CEILING',  extractConst(td, 'SERIES0_CEILING'),  C.series[0].ceiling],
@@ -101,6 +102,9 @@ function buildChecks(C) {
     ['comms-lag ALPHA_FRAME_MS',   extractConst(cl, 'ALPHA_FRAME_MS'),   C.feasibility.alphaFrameMs],
     ['comms-lag SERIES0_CEILING',  extractConst(cl, 'SERIES0_CEILING'),  C.series[0].ceiling],
     ['comms-lag CENTAURI_CEILING', extractConst(cl, 'CENTAURI_CEILING'), C.series[3].ceiling],
+    ['ring-density RING_CIRCUMFERENCE_KM', extractConst(rd, 'RING_CIRCUMFERENCE_KM'), C.housing.ringCircumferenceKm],
+    ['ring-density SKYSCRAPER_RESIDENTS',  extractConst(rd, 'SKYSCRAPER_RESIDENTS'),  C.housing.skyscraperResidents],
+    ['ring-density TARGET_POP',            extractConst(rd, 'TARGET_POP'),            C.population.humans],
   ];
   // NOTE: kinetic-probe C_MS (2.998e8) is a flagged real-science constant, NOT in canon — SKIPPED
   // by design (assert presence + comment, not a canon diff). Presence is confirmed by node --check
