@@ -1,0 +1,17 @@
+{
+  "chain": "feasibility-audit-crosswalk",
+  "cases": [
+    {
+      "branch": "graded",
+      "step_overrides": {},
+      "expected_path_taken": ["grade", "anchor"],
+      "expected_composite_hash": null
+    },
+    {
+      "branch": "barred",
+      "step_overrides": { "grade": { "terminal_approach": "passive" } },
+      "expected_path_taken": ["grade"],
+      "expected_composite_hash": null
+    }
+  ]
+}

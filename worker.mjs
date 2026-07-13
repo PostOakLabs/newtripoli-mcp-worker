@@ -21,6 +21,7 @@ import { compute as selectionCostCompute } from './kernels/selection-cost.kernel
 import { compute as interfaceBandwidthCompute } from './kernels/interface-bandwidth.kernel.mjs';
 import { compute as techTreePathCompute } from './kernels/tech-tree.kernel.mjs';
 import { compute as provenanceCompute } from './kernels/provenance.kernel.mjs';
+import { compute as feasibilityCrosswalkCompute } from './kernels/feasibility-crosswalk.kernel.mjs';
 
 const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -38,7 +39,7 @@ const NT_ARTIFACT_VERSION = '1.0.0';
 // OCG Standard §17 (Kernel Identity Binding) — content digest of this file, computed by
 // generate.mjs over the LF-normalized source with this line's value replaced by the literal
 // 'PLACEHOLDER'. Populated by `node generate.mjs`; idempotent (re-running yields no diff).
-const KERNEL_DIGEST = 'sha256:d027061bc843e19fa2efa16ba79a0160b54698552b8296fbfa03f2a361936dd2';
+const KERNEL_DIGEST = 'sha256:700354bc6119413239741691d1592f64890ddff47f17c083abad19bbc4776f29';
 
 // Vendored from AINumbers ChainGraph SSOT kernels/_hash.mjs (OCG Standard §4 JCS).
 // Namespace adapted for me.newtripoli. Recursive key sort + per-value
@@ -279,6 +280,7 @@ const KERNEL_REGISTRY = {
   nt_interface_bandwidth: { compute: interfaceBandwidthCompute, mandate_type: 'me.newtripoli/interface_bandwidth' },
   nt_tech_tree_path: { compute: techTreePathCompute, mandate_type: 'me.newtripoli/tech_tree_path' },
   nt_provenance: { compute: provenanceCompute, mandate_type: 'me.newtripoli/provenance' },
+  nt_feasibility_crosswalk: { compute: feasibilityCrosswalkCompute, mandate_type: 'me.newtripoli/feasibility_crosswalk' },
 };
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
@@ -371,6 +373,26 @@ export const CHAINS = {
     steps: [
       { id: 'source', tool_id: 'nt_time_dilation', fields: { rate_x: 50, reset_months: 6 } },
       { id: 'anchor', tool_id: 'nt_provenance',    fields: { sim_id: 'nt_time_dilation', inputs: {}, canon_refs: ['provenance'], parent_hash: null } },
+    ],
+  },
+
+  // §3.3 — the meta fan-in: grade all D1..D10 claims, then anchor unless the config is Barred.
+  'feasibility-audit-crosswalk': {
+    title: 'feasibility-audit-crosswalk',
+    steps: [
+      { id: 'grade', tool_id: 'nt_feasibility_crosswalk',
+        fields: { cruise_c: 0.10, terminal_approach: 'staged', target: 'terrestrial planet', distance_ly: 7500,
+                  rate_x: 50, reset_months: 6, pop_billions: 8.1, bio_pct: 10, accel: 1, aug_stage: 'vat',
+                  digital_fidelity_ops: 20, channels: 1024, direction: 'read',
+                  your_rate_x: 50, their_rate_x: 1000000, latency_ms: 50, variant: 'A' },
+        gate: {
+          input: '/binding_verdict',
+          rules: [ { op: 'eq', value: 'Barred', next: 'end' } ], // barred config → stop, do not anchor a "passing" run
+          default: 'anchor',
+        } },
+      { id: 'anchor', tool_id: 'nt_provenance',
+        fields: { sim_id: 'nt_feasibility_crosswalk', inputs: {},
+                  canon_refs: ['C-D1', 'C-D4', 'C-D5', 'C-D6', 'C-D7', 'C-D9', 'C-D10'], parent_hash: null } },
     ],
   },
 };
@@ -1599,6 +1621,108 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/about.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // nt_feasibility_crosswalk — meta-kernel, buildplan §2.5, CHAINS-SPEC §3.
+  // Register: feasibility. Guest-legal: NO (transitively Math.pow via vat-feasibility).
+  // -------------------------------------------------------------------------
+  server.registerTool('nt_feasibility_crosswalk', {
+    title: 'New Tripoli feasibility crosswalk (graded D1–D10 claim ledger)',
+    description:
+      'Grades the ten load-bearing feasibility claims (C-D1..C-D10) of the New Tripoli scenario ' +
+      'against a single scenario config: delegates to the five physics kernels (kinetic probe, ' +
+      'time dilation, vat feasibility, interface bandwidth, comms lag), reads their decision ' +
+      'pointers, and emits a ledger of {claim, verdict, driver} plus verdict tallies and the ' +
+      'binding (worst) verdict. Verdict vocabulary: Permitted, Merely-early, Contested, Barred, ' +
+      'Unfalsifiable. Transitively uses Math.pow (Landauer price): hash-verifiable only, not ' +
+      'guest-legal / not zk-provable.',
+    inputSchema: {
+      cruise_c: z.number().min(0.001).max(0.99).default(0.10).describe('Probe cruise fraction of c (D1; default 0.10).'),
+      terminal_approach: z.enum(['staged', 'passive']).default('staged').describe('Deceleration mode (D1; default staged).'),
+      target: z.string().default('terrestrial planet').describe('Delivery target body (D1; default terrestrial planet).'),
+      distance_ly: z.number().min(1).default(7500).describe('Target distance in light-years (D1; default 7500).'),
+      rate_x: z.number().min(1).default(50).describe('Subjective-time rate multiplier (D5/D7/D10; default 50).'),
+      reset_months: z.number().min(1).default(6).describe('Sabbath reset interval in months (default 6).'),
+      pop_billions: z.number().min(1).max(10).default(8.1).describe('Population in billions (D6; default 8.1).'),
+      bio_pct: z.number().min(0).max(100).default(10).describe('Biological fraction percent (D6; default 10).'),
+      accel: z.number().int().min(1).max(50).default(1).describe('Biological acceleration factor (D5; default 1).'),
+      aug_stage: z.enum(['vat', 'sensory', 'metabolic', 'synaptic', 'hybrid', 'upload']).default('vat').describe('Augmentation stage (D5; default vat).'),
+      digital_fidelity_ops: z.number().int().min(18).max(25).default(20).describe('Digital-mind ops exponent (D6; default 20).'),
+      channels: z.number().min(1).default(1024).describe('BCI channel count (D4; default 1024).'),
+      direction: z.enum(['read', 'write']).default('read').describe('Interface direction (D4; default read).'),
+      your_rate_x: z.number().min(1).default(50).describe('Your subjective rate (D9; default 50).'),
+      their_rate_x: z.number().min(1).default(1000000).describe('Their subjective rate (D9; default 1000000).'),
+      latency_ms: z.number().min(0).default(50).describe('One-way link latency in ms (D9; default 50).'),
+      variant: z.enum(['A', 'B']).default('A').describe('Latency regime (D9): A = tolerable, B = networked real-time (default A).'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async (args) => {
+    const input_parameters = {
+      cruise_c:             args.cruise_c ?? 0.10,
+      terminal_approach:    args.terminal_approach ?? 'staged',
+      target:               args.target ?? 'terrestrial planet',
+      distance_ly:          args.distance_ly ?? 7500,
+      rate_x:               args.rate_x ?? 50,
+      reset_months:         args.reset_months ?? 6,
+      pop_billions:         args.pop_billions ?? 8.1,
+      bio_pct:              args.bio_pct ?? 10,
+      accel:                args.accel ?? 1,
+      aug_stage:            args.aug_stage ?? 'vat',
+      digital_fidelity_ops: args.digital_fidelity_ops ?? 20,
+      channels:             args.channels ?? 1024,
+      direction:            args.direction ?? 'read',
+      your_rate_x:          args.your_rate_x ?? 50,
+      their_rate_x:         args.their_rate_x ?? 1000000,
+      latency_ms:           args.latency_ms ?? 50,
+      variant:              args.variant ?? 'A',
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = feasibilityCrosswalkCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/feasibility_crosswalk',
+      tool_id: 'nt-feasibility-crosswalk',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['feasibility', 'canon'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'feasibility',
+        data_sources: [
+          'Feasibility Audit §3 (claim triage), §4 (C-D1..C-D6/D9), §4.8/§5 (C-D7/D10 upload)',
+          'Canon - New Tripoli.md §26 (substrate split)',
+          'NEWTRIPOLI-CHAINS-SPEC.md §3.2 (locked D1–D10 verdict table)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/sims/feasibility.html',
       },
     };
     artifact.audit_signature.build_identity = {
