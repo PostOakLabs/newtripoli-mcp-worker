@@ -25,8 +25,8 @@ export function compute(policy_parameters) {
   const beta  = p.cruise_c;                          // v/c
   const v     = beta * C_MS;                          // m/s
   const gamma = 1 / Math.sqrt(1 - beta * beta);       // Lorentz factor (sqrt-only ⇒ guest-legal)
-  const cruise_KE_J           = (gamma - 1) * PROBE_MASS_KG * C_MS * C_MS; // relativistic KE (headline)
-  const cruise_KE_classical_J = 0.5 * PROBE_MASS_KG * v * v;               // classical ½mv² (reported)
+  const cruise_KE_J           = String((gamma - 1) * PROBE_MASS_KG * C_MS * C_MS); // relativistic KE (headline); string per RFC 7493 (>2^53, I-JSON guard)
+  const cruise_KE_classical_J = String(0.5 * PROBE_MASS_KG * v * v);               // classical ½mv² (reported); string per RFC 7493 (>2^53, I-JSON guard)
   const travel_yr             = p.distance_ly / beta;                       // ly / (v/c) = years
   const terminal_v_ms         = p.terminal_approach === 'staged' ? TERM_V_MS : v;
   const vaporization_margin   = (0.5 * terminal_v_ms * terminal_v_ms) / PROBE_VAP_JKG; // specific KE vs enthalpy
