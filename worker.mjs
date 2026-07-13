@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { compute as timeDilationCompute } from './kernels/time-dilation.kernel.mjs';
 import { compute as kineticProbeCompute } from './kernels/kinetic-probe.kernel.mjs';
 import { compute as vatFeasibilityCompute } from './kernels/vat-feasibility.kernel.mjs';
+import { compute as accelerationCeilingCompute } from './kernels/acceleration-ceiling.kernel.mjs';
 
 const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -261,6 +262,7 @@ const KERNEL_REGISTRY = {
   nt_time_dilation: { compute: timeDilationCompute, mandate_type: 'me.newtripoli/time_dilation' },
   nt_kinetic_probe: { compute: kineticProbeCompute, mandate_type: 'me.newtripoli/kinetic_probe' },
   nt_vat_feasibility: { compute: vatFeasibilityCompute, mandate_type: 'me.newtripoli/vat_feasibility' },
+  nt_acceleration_ceiling: { compute: accelerationCeilingCompute, mandate_type: 'me.newtripoli/acceleration_ceiling' },
 };
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
@@ -825,6 +827,80 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/sims/feasibility.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // nt_acceleration_ceiling — buildplan 2.1, NEWTRIPOLI-L2-SIMLIFT-SPEC.md §1.
+  // Register: feasibility. Guest-legal: YES.
+  // -------------------------------------------------------------------------
+  server.registerTool('nt_acceleration_ceiling', {
+    title: 'New Tripoli acceleration ceiling by augmentation stage',
+    description:
+      'Computes the subjective-time acceleration ceiling for a given New Tripoli augmentation stage ' +
+      '(vat / sensory / metabolic / synaptic / hybrid / upload), returning the floor, ceiling, and ' +
+      'midpoint of that stage\'s plausible acceleration range, the biological thermal load at the ' +
+      'midpoint (20 W × acceleration; null once the stage is non-biological, above 1000×), the ' +
+      'subjective years lived at the midpoint over a given wall-clock span, and the stage\'s named ' +
+      'bottleneck. Pure average/multiply/compare — guest-legal, zk-provable.',
+    inputSchema: {
+      stage: z.enum(['vat', 'sensory', 'metabolic', 'synaptic', 'hybrid', 'upload']).default('vat').describe(
+        'Augmentation stage (canon default vat).'
+      ),
+      wall_clock_yr: z.number().min(1).max(40).default(20).describe(
+        'Real (wall-clock) years elapsed (default 20).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ stage, wall_clock_yr }) => {
+    const input_parameters = {
+      stage:         stage ?? 'vat',
+      wall_clock_yr: wall_clock_yr ?? 20,
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = accelerationCeilingCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/acceleration_ceiling',
+      tool_id: 'nt-acceleration-ceiling',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['feasibility'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'feasibility',
+        data_sources: [
+          'Cognitive Husbandry.md — Technical Feasibility (augmentation spectrum)',
+          'Feasibility Audit §4.8 (acceleration ceiling by substrate)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/sims/acceleration-ceiling.html',
       },
     };
     artifact.audit_signature.build_identity = {

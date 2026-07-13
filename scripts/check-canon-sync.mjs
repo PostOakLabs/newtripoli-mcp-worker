@@ -76,6 +76,7 @@ function buildChecks(C) {
   const td = kernelSrc('time-dilation');
   const kp = kernelSrc('kinetic-probe');
   const vf = kernelSrc('vat-feasibility');
+  const ac = kernelSrc('acceleration-ceiling');
   const augCeil = C.feasibility.augmentation.map((a) => a.ceiling);
   return [
     ['time-dilation SERIES0_CEILING',  extractConst(td, 'SERIES0_CEILING'),  C.series[0].ceiling],
@@ -93,6 +94,9 @@ function buildChecks(C) {
     ['vat-feasibility SAHARA_YIELD_WM2', extractConst(vf, 'SAHARA_YIELD_WM2'), C.feasibility.saharaYieldWPerM2],
     ['vat-feasibility AUG_STAGES[].ceiling',
       extractConst(vf, 'AUG_STAGES').map((a) => a.ceiling), augCeil],
+    ['acceleration-ceiling BRAIN_W', extractConst(ac, 'BRAIN_W'), C.feasibility.brainWatts],
+    ['acceleration-ceiling AUGMENTATION[].floor',   extractConst(ac, 'AUGMENTATION').map((a) => a.floor),   C.feasibility.augmentation.map((a) => a.floor)],
+    ['acceleration-ceiling AUGMENTATION[].ceiling', extractConst(ac, 'AUGMENTATION').map((a) => a.ceiling), C.feasibility.augmentation.map((a) => a.ceiling)],
   ];
   // NOTE: kinetic-probe C_MS (2.998e8) is a flagged real-science constant, NOT in canon — SKIPPED
   // by design (assert presence + comment, not a canon diff). Presence is confirmed by node --check
