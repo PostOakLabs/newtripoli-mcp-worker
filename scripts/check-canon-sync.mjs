@@ -80,6 +80,7 @@ function buildChecks(C) {
   const cl = kernelSrc('comms-lag');
   const rd = kernelSrc('ring-density');
   const bs = kernelSrc('birthday-sacrifice');
+  const sb = kernelSrc('synthetic-body');
   const augCeil = C.feasibility.augmentation.map((a) => a.ceiling);
   return [
     ['time-dilation SERIES0_CEILING',  extractConst(td, 'SERIES0_CEILING'),  C.series[0].ceiling],
@@ -109,6 +110,13 @@ function buildChecks(C) {
     ['birthday-sacrifice SIM_YEARS_PER_BLOCK', extractConst(bs, 'SIM_YEARS_PER_BLOCK'), C.simYearsPerBlock],
     ['birthday-sacrifice SERIES0_CEILING',     extractConst(bs, 'SERIES0_CEILING'),     C.series[0].ceiling],
     ['birthday-sacrifice PLUTO_START',         extractConst(bs, 'PLUTO_START'),         C.plutoDoublingSchedule[0]],
+    ['synthetic-body OSMIUM_D',   extractConst(sb, 'OSMIUM_D'),   C.synthBody.materials.osmium],
+    ['synthetic-body STEEL_D',    extractConst(sb, 'STEEL_D'),    C.synthBody.materials.steel],
+    ['synthetic-body TITANIUM_D', extractConst(sb, 'TITANIUM_D'), C.synthBody.materials.titanium],
+    ['synthetic-body ALUMINUM_D', extractConst(sb, 'ALUMINUM_D'), C.synthBody.materials.aluminum],
+    ['synthetic-body CARBON_D',   extractConst(sb, 'CARBON_D'),   C.synthBody.materials.carbonComposite],
+    ['synthetic-body OSMIUM_KG',  extractConst(sb, 'OSMIUM_KG'),  C.synthBody.totalMassKg],
+    ['synthetic-body HUMAN_KG',   extractConst(sb, 'HUMAN_KG'),   C.synthBody.avgHumanKg],
   ];
   // NOTE: kinetic-probe C_MS (2.998e8) is a flagged real-science constant, NOT in canon — SKIPPED
   // by design (assert presence + comment, not a canon diff). Presence is confirmed by node --check

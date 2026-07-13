@@ -16,6 +16,7 @@ import { compute as accelerationCeilingCompute } from './kernels/acceleration-ce
 import { compute as commsLagCompute } from './kernels/comms-lag.kernel.mjs';
 import { compute as ringDensityCompute } from './kernels/ring-density.kernel.mjs';
 import { compute as birthdaySacrificeCompute } from './kernels/birthday-sacrifice.kernel.mjs';
+import { compute as syntheticBodyCompute } from './kernels/synthetic-body.kernel.mjs';
 
 const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -269,6 +270,7 @@ const KERNEL_REGISTRY = {
   nt_comms_lag: { compute: commsLagCompute, mandate_type: 'me.newtripoli/comms_lag' },
   nt_ring_density: { compute: ringDensityCompute, mandate_type: 'me.newtripoli/ring_density' },
   nt_birthday_sacrifice: { compute: birthdaySacrificeCompute, mandate_type: 'me.newtripoli/birthday_sacrifice' },
+  nt_synthetic_body: { compute: syntheticBodyCompute, mandate_type: 'me.newtripoli/synthetic_body' },
 };
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
@@ -1141,6 +1143,72 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/sims/birthday-sacrifice.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // nt_synthetic_body — buildplan 2.1, NEWTRIPOLI-L2-SIMLIFT-SPEC.md §5.
+  // Register: canon. Guest-legal: YES.
+  // -------------------------------------------------------------------------
+  server.registerTool('nt_synthetic_body', {
+    title: 'New Tripoli synthetic body mass',
+    description:
+      'Computes the mass (kg and lb), human-mass ratio, and water-buoyancy of a synthetic body ' +
+      'skeleton built from a given material, scaled from the canon osmium reference build. Pure ' +
+      'multiply/divide/compare — guest-legal, zk-provable.',
+    inputSchema: {
+      material: z.enum(['osmium', 'steel', 'titanium', 'aluminum', 'carbonComposite']).default('osmium').describe(
+        'Skeleton material (default osmium, the canon reference build).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ material }) => {
+    const input_parameters = {
+      material: material ?? 'osmium',
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = syntheticBodyCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/synthetic_body',
+      tool_id: 'nt-synthetic-body',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['canon'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'canon',
+        data_sources: [
+          'Canon - New Tripoli.md §35/§37 (synthetic body / osmium skeleton)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/sims/synthetic-body.html',
       },
     };
     artifact.audit_signature.build_identity = {
