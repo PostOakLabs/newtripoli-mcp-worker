@@ -73,11 +73,11 @@ const CH_CANON = {
   // tech-tree DAG exception). Consumed by the explainer pages (EXPLAINER-TEMPLATE-SPEC),
   // not the kernels. Populated further by the explainer build WUs.
   genres: {
-    warFinance:       { documented:['Inter-Allied war debts','1917 Liberty Loans','1932 Lausanne default'], genre:['Alt History - What if WW1 had been avoided.md'], caveat:'Currency figures are order-of-magnitude calibration, not ledger truth.' },
+    warFinance:       { documented:['Inter-Allied war debts','1917 Liberty Loans','1932 Lausanne default'], genre:['Henkel, Kaisertag (2002)','Stein, Der Komet (2013)'], caveat:'Currency figures are order-of-magnitude calibration, not ledger truth.' },
     nuclearClock:     { documented:['Manhattan timeline','Smyth Report 1945','Soviet RDS-1 1949'], genre:['Henkel, Kaisertag (2002)','alternathistory.ru nuclear-strategies'], caveat:'AEC vs NRDC stockpile counts differ; treat dates as ranges.' },
-    attributionDecay: { documented:['Vela/AFTAC detection record','nuclear forensics'], genre:['Alt History - The Undisclosed Program.md'], caveat:'Decay curve is a parametric model, not a measured attribution history.' },
-    injustice:        { documented:['UCDP/PRIO','COW','Geneva Declaration GBAV'], genre:['NEWTRIPOLI-ALTHIST-REFRAME-TRIAGE.md #12'], caveat:'Branch tolls are illustrative parameters; the thesis is the ranking instability, not the counts.' },
-    stadium:          { documented:['Canon - New Tripoli.md §Stadium','Russia-2024 stadium/irradiance figures'], genre:[], caveat:'Substrate footprint fits a stadium; the matching power supply does not.' },
+    attributionDecay: { documented:['Vela/AFTAC detection record','nuclear forensics'], genre:['alternathistory.ru — US nuclear strategies'], caveat:'Decay curve is a parametric model, not a measured attribution history.' },
+    injustice:        { documented:['UCDP/PRIO','COW','Geneva Declaration GBAV'], genre:['conflict-severity counting methodology (Marshall/Gurr PITF)'], caveat:'Branch tolls are illustrative parameters; the thesis is the ranking instability, not the counts.' },
+    stadium:          { documented:['New Tripoli canon §Stadium','Russia-2024 stadium/irradiance figures'], genre:[], caveat:'Substrate footprint fits a stadium; the matching power supply does not.' },
   },
 
   // ── Brain-in-a-Vat feasibility (CH "Technical Feasibility" napkin math) ─────
