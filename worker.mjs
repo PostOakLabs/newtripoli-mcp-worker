@@ -18,6 +18,7 @@ import { compute as ringDensityCompute } from './kernels/ring-density.kernel.mjs
 import { compute as birthdaySacrificeCompute } from './kernels/birthday-sacrifice.kernel.mjs';
 import { compute as syntheticBodyCompute } from './kernels/synthetic-body.kernel.mjs';
 import { compute as selectionCostCompute } from './kernels/selection-cost.kernel.mjs';
+import { compute as interfaceBandwidthCompute } from './kernels/interface-bandwidth.kernel.mjs';
 
 const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -273,6 +274,7 @@ const KERNEL_REGISTRY = {
   nt_birthday_sacrifice: { compute: birthdaySacrificeCompute, mandate_type: 'me.newtripoli/birthday_sacrifice' },
   nt_synthetic_body: { compute: syntheticBodyCompute, mandate_type: 'me.newtripoli/synthetic_body' },
   nt_selection_cost: { compute: selectionCostCompute, mandate_type: 'me.newtripoli/selection_cost' },
+  nt_interface_bandwidth: { compute: interfaceBandwidthCompute, mandate_type: 'me.newtripoli/interface_bandwidth' },
 };
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
@@ -1279,6 +1281,80 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/sims/selection-sorter.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // nt_interface_bandwidth — buildplan 2.2, NEWTRIPOLI-LOG-TECHTREE-SPEC.md §1.
+  // Register: real-science. Guest-legal: NO (Math.log10/Math.log2 of runtime channels).
+  // -------------------------------------------------------------------------
+  server.registerTool('nt_interface_bandwidth', {
+    title: 'New Tripoli brain-interface bandwidth gap',
+    description:
+      'Computes how far a brain-computer interface of a given channel count is from whole-brain ' +
+      'bandwidth (~86 billion neurons). Returns the fraction of the brain covered, the "1 in N" ' +
+      'reciprocal, the order-of-magnitude gap, the number of channel-count doublings to close it, ' +
+      'whether the interface is complete, whether the (harder) write direction is requested, and a ' +
+      'verdict string. Uses log10/log2 of a runtime value — hash-verifiable, not zk-provable.',
+    inputSchema: {
+      channels: z.number().min(1).max(1e11).default(1024).describe(
+        'Interface channel count (default 1024, present-day Neuralink-class BCI).'
+      ),
+      direction: z.enum(['read', 'write']).default('read').describe(
+        'Interface direction (default read; write is the unsolved-at-scale problem).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ channels, direction }) => {
+    const input_parameters = {
+      channels:  channels ?? 1024,
+      direction: direction ?? 'read',
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = interfaceBandwidthCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/interface_bandwidth',
+      tool_id: 'nt-interface-bandwidth',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['real-science'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'real-science',
+        data_sources: [
+          'Feasibility Audit §4.4 (interface bandwidth / the write problem)',
+          'Koch, K. et al. (2006), Current Biology 16(14):1428–1434',
+          'Neuralink PRIME study (2024+) — N1, 1,024 electrodes / 64 threads',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/sims/interface-bandwidth.html',
       },
     };
     artifact.audit_signature.build_identity = {

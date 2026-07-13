@@ -82,6 +82,7 @@ function buildChecks(C) {
   const bs = kernelSrc('birthday-sacrifice');
   const sb = kernelSrc('synthetic-body');
   const sc = kernelSrc('selection-cost');
+  const ib = kernelSrc('interface-bandwidth');
   const augCeil = C.feasibility.augmentation.map((a) => a.ceiling);
   return [
     ['time-dilation SERIES0_CEILING',  extractConst(td, 'SERIES0_CEILING'),  C.series[0].ceiling],
@@ -122,6 +123,8 @@ function buildChecks(C) {
     ['selection-cost SELECTION_CRITERIA',
       Object.keys(C.selection.criteria).map((k) => extractConst(sc, 'SELECTION_CRITERIA')[k]),
       Object.keys(C.selection.criteria).map((k) => C.selection.criteria[k])],
+    ['interface-bandwidth NEURONS',            extractConst(ib, 'NEURONS'),            C.feasibility.neurons],
+    ['interface-bandwidth NEURALINK_CHANNELS', extractConst(ib, 'NEURALINK_CHANNELS'), C.feasibility.neuralinkChannels],
   ];
   // NOTE: kinetic-probe C_MS (2.998e8) is a flagged real-science constant, NOT in canon — SKIPPED
   // by design (assert presence + comment, not a canon diff). Presence is confirmed by node --check
