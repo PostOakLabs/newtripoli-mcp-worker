@@ -19,6 +19,7 @@ import { compute as birthdaySacrificeCompute } from './kernels/birthday-sacrific
 import { compute as syntheticBodyCompute } from './kernels/synthetic-body.kernel.mjs';
 import { compute as selectionCostCompute } from './kernels/selection-cost.kernel.mjs';
 import { compute as interfaceBandwidthCompute } from './kernels/interface-bandwidth.kernel.mjs';
+import { compute as techTreePathCompute } from './kernels/tech-tree.kernel.mjs';
 
 const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -275,6 +276,7 @@ const KERNEL_REGISTRY = {
   nt_synthetic_body: { compute: syntheticBodyCompute, mandate_type: 'me.newtripoli/synthetic_body' },
   nt_selection_cost: { compute: selectionCostCompute, mandate_type: 'me.newtripoli/selection_cost' },
   nt_interface_bandwidth: { compute: interfaceBandwidthCompute, mandate_type: 'me.newtripoli/interface_bandwidth' },
+  nt_tech_tree_path: { compute: techTreePathCompute, mandate_type: 'me.newtripoli/tech_tree_path' },
 };
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
@@ -1355,6 +1357,83 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/sims/interface-bandwidth.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // nt_tech_tree_path — buildplan 2.3, NEWTRIPOLI-LOG-TECHTREE-SPEC.md §2.
+  // Register: canon. Guest-legal: YES (set membership / boolean / integer; §18 zk candidate).
+  // -------------------------------------------------------------------------
+  server.registerTool('nt_tech_tree_path', {
+    title: 'New Tripoli post-Wake tech-tree path solver',
+    description:
+      'Solves the post-Wake reindustrialization dependency graph (35 nodes, tiers T0–T9, ending at a ' +
+      'femtoscale assembler). Given a set of already-built capabilities and a target, returns which ' +
+      'nodes are buildable now, the critical path to the target (cheapest prerequisite at each step), ' +
+      'the missing prerequisites, the remaining step count, and whether the target is already built or ' +
+      'immediately buildable. Pure set membership / integer / boolean — guest-legal.',
+    inputSchema: {
+      built: z.array(z.string()).default(['solar', 'labor', 'garage', 'knowledge', 'aircraft']).describe(
+        'Already-built capability node ids (default the 5 Wake-Day given nodes). Unknown ids are ignored.'
+      ),
+      target: z.enum([
+        'solar', 'labor', 'garage', 'knowledge', 'aircraft', 'survey', 'mining', 'refractory',
+        'smelting', 'steel', 'copper', 'lathe', 'precision', 'grid', 'aluminum', 'motors', 'nuclear',
+        'chem', 'vacuum', 'optics', 'metrology', 'cleanroom', 'silicon', 'litho', 'restart', 'cmos',
+        'compute', 'gaa', 'forksheet', 'cfet', 'angstrom', 'mems', 'nano', 'pico', 'femto',
+      ]).default('femto').describe('Target capability node to reach (default femto, the femtoscale assembler).'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ built, target }) => {
+    const input_parameters = {
+      built:  built ?? ['solar', 'labor', 'garage', 'knowledge', 'aircraft'],
+      target: target ?? 'femto',
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = techTreePathCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/tech_tree_path',
+      tool_id: 'nt-tech-tree-path',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['canon', 'feasibility'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'canon',
+        data_sources: [
+          'Canon - New Tripoli.md §34 (resource-management tech tree)',
+          'Canon - New Tripoli.md §36 (post-Wake reindustrialization of New Anasis)',
+          'Canon - New Tripoli.md §37 (femtoscale assembler)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/sims/tech-tree.html',
       },
     };
     artifact.audit_signature.build_identity = {
