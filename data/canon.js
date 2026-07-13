@@ -56,6 +56,30 @@ const CH_CANON = {
     apeDilationException: 4   // a few dozen chimps opt into 4×
   },
 
+  // ── Alt-history reframe calibration (§2.6/§2.7-real) ─────────────────────────
+  // ILLUSTRATIVE, TUNABLE knobs for the 5 deterministic alt-history kernels — cited
+  // to the documented record, NOT asserted history. Determinism computes over these
+  // as PARAMETERS (board reframe rule). See NEWTRIPOLI-ALTHIST-CHAINS-SPEC.md.
+  altHistory: {
+    warFinance:       { startYear:1914, startingReserves:165, annualRevenue:200, warCostPerYear:1000, debtServiceRate:0.05, horizonYears:30 },
+    nuclearClock:     { programStartYear:1942, criticalMassKg:6.0, fissileProductionKgYr:4.0, engineeringLeadMonths:18, yieldKt:20 },
+    attributionDecay: { initialConfidence:0.95, decayPerYear:0.15, threshold:0.50, testBoostPerCorroboration:0.30, horizonYears:100 },
+    injustice:        { indirectMultiplier:3.5, displacementWeight:0.1, sovereigntyWeight:1e6, maxBranches:20 },
+    stadium:          { ghiEquatorKwh:5, latitudeDeg:45, powerPerCapitaW:20, panelEfficiency:0.22, stadiumAreaM2:200000, areaPerCapitaM2:1e-6 },
+  },
+
+  // ── Alt-history genre / citation registry (loose stance: "genre + documented record") ──
+  // STRUCTURAL STRINGS ONLY — not vendored into kernels, NOT canon-synced (like the
+  // tech-tree DAG exception). Consumed by the explainer pages (EXPLAINER-TEMPLATE-SPEC),
+  // not the kernels. Populated further by the explainer build WUs.
+  genres: {
+    warFinance:       { documented:['Inter-Allied war debts','1917 Liberty Loans','1932 Lausanne default'], genre:['Alt History - What if WW1 had been avoided.md'], caveat:'Currency figures are order-of-magnitude calibration, not ledger truth.' },
+    nuclearClock:     { documented:['Manhattan timeline','Smyth Report 1945','Soviet RDS-1 1949'], genre:['Henkel, Kaisertag (2002)','alternathistory.ru nuclear-strategies'], caveat:'AEC vs NRDC stockpile counts differ; treat dates as ranges.' },
+    attributionDecay: { documented:['Vela/AFTAC detection record','nuclear forensics'], genre:['Alt History - The Undisclosed Program.md'], caveat:'Decay curve is a parametric model, not a measured attribution history.' },
+    injustice:        { documented:['UCDP/PRIO','COW','Geneva Declaration GBAV'], genre:['NEWTRIPOLI-ALTHIST-REFRAME-TRIAGE.md #12'], caveat:'Branch tolls are illustrative parameters; the thesis is the ranking instability, not the counts.' },
+    stadium:          { documented:['Canon - New Tripoli.md §Stadium','Russia-2024 stadium/irradiance figures'], genre:[], caveat:'Substrate footprint fits a stadium; the matching power supply does not.' },
+  },
+
   // ── Brain-in-a-Vat feasibility (CH "Technical Feasibility" napkin math) ─────
   feasibility: {
     brainWatts: 20,            // resting human brain power draw (~20 W)
