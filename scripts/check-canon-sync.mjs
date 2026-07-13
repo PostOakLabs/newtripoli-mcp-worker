@@ -77,6 +77,7 @@ function buildChecks(C) {
   const kp = kernelSrc('kinetic-probe');
   const vf = kernelSrc('vat-feasibility');
   const ac = kernelSrc('acceleration-ceiling');
+  const cl = kernelSrc('comms-lag');
   const augCeil = C.feasibility.augmentation.map((a) => a.ceiling);
   return [
     ['time-dilation SERIES0_CEILING',  extractConst(td, 'SERIES0_CEILING'),  C.series[0].ceiling],
@@ -97,6 +98,9 @@ function buildChecks(C) {
     ['acceleration-ceiling BRAIN_W', extractConst(ac, 'BRAIN_W'), C.feasibility.brainWatts],
     ['acceleration-ceiling AUGMENTATION[].floor',   extractConst(ac, 'AUGMENTATION').map((a) => a.floor),   C.feasibility.augmentation.map((a) => a.floor)],
     ['acceleration-ceiling AUGMENTATION[].ceiling', extractConst(ac, 'AUGMENTATION').map((a) => a.ceiling), C.feasibility.augmentation.map((a) => a.ceiling)],
+    ['comms-lag ALPHA_FRAME_MS',   extractConst(cl, 'ALPHA_FRAME_MS'),   C.feasibility.alphaFrameMs],
+    ['comms-lag SERIES0_CEILING',  extractConst(cl, 'SERIES0_CEILING'),  C.series[0].ceiling],
+    ['comms-lag CENTAURI_CEILING', extractConst(cl, 'CENTAURI_CEILING'), C.series[3].ceiling],
   ];
   // NOTE: kinetic-probe C_MS (2.998e8) is a flagged real-science constant, NOT in canon — SKIPPED
   // by design (assert presence + comment, not a canon diff). Presence is confirmed by node --check

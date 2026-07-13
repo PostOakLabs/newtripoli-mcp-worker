@@ -13,6 +13,7 @@ import { compute as timeDilationCompute } from './kernels/time-dilation.kernel.m
 import { compute as kineticProbeCompute } from './kernels/kinetic-probe.kernel.mjs';
 import { compute as vatFeasibilityCompute } from './kernels/vat-feasibility.kernel.mjs';
 import { compute as accelerationCeilingCompute } from './kernels/acceleration-ceiling.kernel.mjs';
+import { compute as commsLagCompute } from './kernels/comms-lag.kernel.mjs';
 
 const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -263,6 +264,7 @@ const KERNEL_REGISTRY = {
   nt_kinetic_probe: { compute: kineticProbeCompute, mandate_type: 'me.newtripoli/kinetic_probe' },
   nt_vat_feasibility: { compute: vatFeasibilityCompute, mandate_type: 'me.newtripoli/vat_feasibility' },
   nt_acceleration_ceiling: { compute: accelerationCeilingCompute, mandate_type: 'me.newtripoli/acceleration_ceiling' },
+  nt_comms_lag: { compute: commsLagCompute, mandate_type: 'me.newtripoli/comms_lag' },
 };
 
 // §21.2/§21.4 composite preimage helper — bare-hex SHA-256 over the JCS-
@@ -901,6 +903,84 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/sims/acceleration-ceiling.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // nt_comms_lag — buildplan 2.1, NEWTRIPOLI-L2-SIMLIFT-SPEC.md §2.
+  // Register: canon + feasibility. Guest-legal: YES.
+  // -------------------------------------------------------------------------
+  server.registerTool('nt_comms_lag', {
+    title: 'New Tripoli comms lag between subjective-time rates',
+    description:
+      'Computes round-trip communications lag between two parties running at different subjective-time ' +
+      'acceleration rates, given a wall-clock speed-of-light latency. Returns round-trip time, each ' +
+      'party\'s subjective wait, the worst (larger) subjective wait, which party is slower, and the ' +
+      'latency as a percentage of the ~10 Hz alpha-band perceptual frame. Pure multiply/max/compare — ' +
+      'guest-legal, zk-provable.',
+    inputSchema: {
+      your_rate_x: z.number().min(1).max(1e9).default(50).describe(
+        'Your subjective-time acceleration rate (default 50, New Tripoli ceiling).'
+      ),
+      their_rate_x: z.number().min(1).max(1e9).default(1000000).describe(
+        'Their subjective-time acceleration rate (default 1,000,000, New Centauri ceiling).'
+      ),
+      latency_ms: z.number().min(1).max(200).default(50).describe(
+        'One-way wall-clock latency in milliseconds (default 50).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ your_rate_x, their_rate_x, latency_ms }) => {
+    const input_parameters = {
+      your_rate_x:  your_rate_x ?? 50,
+      their_rate_x: their_rate_x ?? 1000000,
+      latency_ms:   latency_ms ?? 50,
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = commsLagCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/comms_lag',
+      tool_id: 'nt-comms-lag',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['canon', 'feasibility'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'canon',
+        data_sources: [
+          'Canon - New Tripoli.md §30 (New Centauri — contact-list problem)',
+          'Canon - New Tripoli.md §18 (Time Dilation)',
+          'Feasibility Audit (alpha-band perceptual frame)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/sims/comms-lag.html',
       },
     };
     artifact.audit_signature.build_identity = {
