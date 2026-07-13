@@ -4,8 +4,11 @@
     {
       "branch": "default",
       "step_overrides": {},
-      "expected_path_taken": ["source", "anchor"],
-      "expected_composite_hash": null
+      "expected_path_taken": [
+        "source",
+        "anchor"
+      ],
+      "expected_composite_hash": "e3a8a7172e787d7cc16160ddf7f25c9b89af9e2c92119676343ca098bd1bb188"
     }
   ]
 }

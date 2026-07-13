@@ -4,8 +4,12 @@
     {
       "branch": "default",
       "step_overrides": {},
-      "expected_path_taken": ["you", "them", "comms"],
-      "expected_composite_hash": null
+      "expected_path_taken": [
+        "you",
+        "them",
+        "comms"
+      ],
+      "expected_composite_hash": "f606c4db33800fba2f72cb1bfe4c14fd66643f4d1c5a0fdc456e56f6deb833ae"
     }
   ]
 }

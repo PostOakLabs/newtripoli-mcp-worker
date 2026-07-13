@@ -4,14 +4,24 @@
     {
       "branch": "feasible",
       "step_overrides": {},
-      "expected_path_taken": ["power", "interface", "thermal"],
-      "expected_composite_hash": null
+      "expected_path_taken": [
+        "power",
+        "interface",
+        "thermal"
+      ],
+      "expected_composite_hash": "e2fb2b28fc552be076cfb4da8cbda6cbabf4344c56c8487b67336e69ca7ccc86"
     },
     {
       "branch": "over_capacity",
-      "step_overrides": { "power": { "pop_billions": 100000 } },
-      "expected_path_taken": ["power"],
-      "expected_composite_hash": null
+      "step_overrides": {
+        "power": {
+          "pop_billions": 100000
+        }
+      },
+      "expected_path_taken": [
+        "power"
+      ],
+      "expected_composite_hash": "8c9b070e757e992901618fbcdf0e9a0d694c55d9e5477b93d4cfc853ec1bec20"
     }
   ]
 }

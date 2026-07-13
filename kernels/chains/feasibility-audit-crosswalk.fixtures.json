@@ -4,14 +4,23 @@
     {
       "branch": "graded",
       "step_overrides": {},
-      "expected_path_taken": ["grade", "anchor"],
-      "expected_composite_hash": null
+      "expected_path_taken": [
+        "grade",
+        "anchor"
+      ],
+      "expected_composite_hash": "2a650b8b86d1615732452de5dca4f76a6ec409d3e85fe1f140d2f1c16273e294"
     },
     {
       "branch": "barred",
-      "step_overrides": { "grade": { "terminal_approach": "passive" } },
-      "expected_path_taken": ["grade"],
-      "expected_composite_hash": null
+      "step_overrides": {
+        "grade": {
+          "terminal_approach": "passive"
+        }
+      },
+      "expected_path_taken": [
+        "grade"
+      ],
+      "expected_composite_hash": "144fa4f0701f3ddaac28f8f2a80a1c5865e6892e00eb33a1fb825ac03d93894c"
     }
   ]
 }

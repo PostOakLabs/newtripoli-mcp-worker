@@ -93,3 +93,7 @@ jobs:
       # 7. Tier-A kernel-fixture unit — L1 §6.4 parity anchors. Pure import.
       - name: Test — kernel fixtures (Tier A)
         run: node --test scripts/tests/tier-a-kernels.test.mjs
+
+      # 8. Chain composite-golden drift — recompute 12 chain-branch composites vs frozen.
+      - name: Chain-golden drift gate
+        run: node scripts/check-chain-goldens.mjs

@@ -4,20 +4,35 @@
     {
       "branch": "B_survives",
       "step_overrides": {},
-      "expected_path_taken": ["probe", "anchor"],
-      "expected_composite_hash": null
+      "expected_path_taken": [
+        "probe",
+        "anchor"
+      ],
+      "expected_composite_hash": "beaea0651b35b1d6e461d58b8c5eba4f2147bb4d0973724b7bd1a3356b7e39f6"
     },
     {
       "branch": "A_vaporized",
-      "step_overrides": { "probe": { "terminal_approach": "passive" } },
-      "expected_path_taken": ["probe"],
-      "expected_composite_hash": null
+      "step_overrides": {
+        "probe": {
+          "terminal_approach": "passive"
+        }
+      },
+      "expected_path_taken": [
+        "probe"
+      ],
+      "expected_composite_hash": "460fc6b6f9fb14a33331da75427f1a8604232a349bda11e474c80ae3ce0236bc"
     },
     {
       "branch": "destroyed_no_surface",
-      "step_overrides": { "probe": { "target": "gas giant" } },
-      "expected_path_taken": ["probe"],
-      "expected_composite_hash": null
+      "step_overrides": {
+        "probe": {
+          "target": "gas giant"
+        }
+      },
+      "expected_path_taken": [
+        "probe"
+      ],
+      "expected_composite_hash": "b040f0ecbdf82582e38e8eb740396a75b6588aa7955be3dac73a0ef1ba35c815"
     }
   ]
 }

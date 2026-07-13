@@ -3,7 +3,7 @@
     "canon_version": "2026.07.12",
     "frozen_at": "2026-07-12",
     "parity_verified": true,
-    "note": "12 tool goldens (3 L1 + 9 L2) — bare-hex execution_hash at fixture (default) inputs. Regenerate via freeze-goldens.mjs."
+    "note": "13 tool goldens (3 L1 + 9 L2 + 1 meta) — bare-hex execution_hash at fixture (default) inputs. Regenerate via freeze-goldens.mjs."
   },
   "nt_time_dilation": {
     "execution_hash": "5a311b5720c29ba84f0365967ef7d524fd10662c523e12a9ab50b8066d7fe977"
@@ -40,5 +40,8 @@
   },
   "nt_provenance": {
     "execution_hash": "d56fb9a94074bcb66e4ea2c8619db1ca6d31d93087e2b1d91f804fa0d5b09060"
+  },
+  "nt_feasibility_crosswalk": {
+    "execution_hash": "43889231b502736792e83001d900f867d65d3a92d4bf4640c72bd51b21b08729"
   }
 }

@@ -1,0 +1,19 @@
+{
+  "cruise_c": 0.10,
+  "terminal_approach": "staged",
+  "target": "terrestrial planet",
+  "distance_ly": 7500,
+  "rate_x": 50,
+  "reset_months": 6,
+  "pop_billions": 8.1,
+  "bio_pct": 10,
+  "accel": 1,
+  "aug_stage": "vat",
+  "digital_fidelity_ops": 20,
+  "channels": 1024,
+  "direction": "read",
+  "your_rate_x": 50,
+  "their_rate_x": 1000000,
+  "latency_ms": 50,
+  "variant": "A"
+}

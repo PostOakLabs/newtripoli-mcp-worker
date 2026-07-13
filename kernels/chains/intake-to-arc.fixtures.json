@@ -4,8 +4,13 @@
     {
       "branch": "default",
       "step_overrides": {},
-      "expected_path_taken": ["probe", "power", "dilate", "thermal"],
-      "expected_composite_hash": null
+      "expected_path_taken": [
+        "probe",
+        "power",
+        "dilate",
+        "thermal"
+      ],
+      "expected_composite_hash": "1f0c7d02e1516954c5837204775fc364ce2cf1954112fb164b86994c309034e2"
     }
   ]
 }

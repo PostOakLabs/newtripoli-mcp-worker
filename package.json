@@ -7,7 +7,7 @@
     "generate": "node generate.mjs",
     "deploy": "node generate.mjs && npx wrangler deploy",
     "freeze-goldens": "node scripts/freeze-goldens.mjs",
-    "check": "node scripts/check-canon-sync.mjs && node scripts/check-kernel-digest.mjs && node scripts/check-goldens.mjs"
+    "check": "node scripts/check-canon-sync.mjs && node scripts/check-kernel-digest.mjs && node scripts/check-goldens.mjs && node scripts/check-chain-goldens.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",

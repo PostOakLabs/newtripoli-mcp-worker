@@ -4,14 +4,23 @@
     {
       "branch": "A_biological_holds",
       "step_overrides": {},
-      "expected_path_taken": ["dilate"],
-      "expected_composite_hash": null
+      "expected_path_taken": [
+        "dilate"
+      ],
+      "expected_composite_hash": "7807185037fe63d54da23b062ef5942431a38c4f9eca5388cc76120b88b34dae"
     },
     {
       "branch": "B_upload_required",
-      "step_overrides": { "dilate": { "rate_x": 200 } },
-      "expected_path_taken": ["dilate", "upload"],
-      "expected_composite_hash": null
+      "step_overrides": {
+        "dilate": {
+          "rate_x": 200
+        }
+      },
+      "expected_path_taken": [
+        "dilate",
+        "upload"
+      ],
+      "expected_composite_hash": "9605d49e090d9e4567c604ee119898e811a78f69a798805d9529381ed4955f7d"
     }
   ]
 }

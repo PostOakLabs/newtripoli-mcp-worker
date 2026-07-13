@@ -24,10 +24,11 @@ import { compute as selectionCostCompute }       from '../kernels/selection-cost
 import { compute as interfaceBandwidthCompute }  from '../kernels/interface-bandwidth.kernel.mjs';
 import { compute as techTreePathCompute }        from '../kernels/tech-tree.kernel.mjs';
 import { compute as provenanceCompute }          from '../kernels/provenance.kernel.mjs';
+import { compute as feasibilityCrosswalkCompute } from '../kernels/feasibility-crosswalk.kernel.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
-// tool id → { slug, compute } — all 12 tools (3 L1 + 9 L2), master-table order (spec §0.1).
+// tool id → { slug, compute } — all 13 tools (3 L1 + 9 L2 + 1 meta), master-table order (spec §0.1).
 export const TOOLS = [
   { id: 'nt_time_dilation',        slug: 'time-dilation',        compute: timeDilationCompute },
   { id: 'nt_kinetic_probe',        slug: 'kinetic-probe',        compute: kineticProbeCompute },
@@ -41,6 +42,7 @@ export const TOOLS = [
   { id: 'nt_interface_bandwidth',  slug: 'interface-bandwidth',  compute: interfaceBandwidthCompute },
   { id: 'nt_tech_tree_path',       slug: 'tech-tree',            compute: techTreePathCompute },
   { id: 'nt_provenance',           slug: 'provenance',           compute: provenanceCompute },
+  { id: 'nt_feasibility_crosswalk', slug: 'feasibility-crosswalk', compute: feasibilityCrosswalkCompute },
 ];
 
 export function workerCanonVersion() {
