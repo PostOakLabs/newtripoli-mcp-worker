@@ -23,6 +23,7 @@ import { compute as techTreePathCompute } from './kernels/tech-tree.kernel.mjs';
 import { compute as provenanceCompute } from './kernels/provenance.kernel.mjs';
 import { compute as feasibilityCrosswalkCompute } from './kernels/feasibility-crosswalk.kernel.mjs';
 import { compute as warFinanceDefaultCompute } from './kernels/war-finance.kernel.mjs';
+import { compute as nuclearProgramClockCompute } from './kernels/nuclear-clock.kernel.mjs';
 
 export const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -40,7 +41,7 @@ const NT_ARTIFACT_VERSION = '1.0.0';
 // OCG Standard §17 (Kernel Identity Binding) — content digest of this file, computed by
 // generate.mjs over the LF-normalized source with this line's value replaced by the literal
 // 'PLACEHOLDER'. Populated by `node generate.mjs`; idempotent (re-running yields no diff).
-const KERNEL_DIGEST = 'sha256:2b4b48ee89a27fbc07d480dc9c6c74cc9ebb21b5f73d6a162e74cdf73738066d';
+const KERNEL_DIGEST = 'sha256:60e56560296768044c2c0c4d6a7b49a4e696883861e3e91cc7bcc2a709406b15';
 
 // Vendored from AINumbers ChainGraph SSOT kernels/_hash.mjs (OCG Standard §4 JCS).
 // Namespace adapted for me.newtripoli. Recursive key sort + per-value
@@ -283,6 +284,7 @@ export const KERNEL_REGISTRY = {
   nt_provenance: { compute: provenanceCompute, mandate_type: 'me.newtripoli/provenance' },
   nt_feasibility_crosswalk: { compute: feasibilityCrosswalkCompute, mandate_type: 'me.newtripoli/feasibility_crosswalk' },
   ah_war_finance_default: { compute: warFinanceDefaultCompute, mandate_type: 'me.newtripoli/war_finance_default' },
+  ah_nuclear_program_clock: { compute: nuclearProgramClockCompute, mandate_type: 'me.newtripoli/nuclear_program_clock' },
 };
 
 // ---------------------------------------------------------------------------
@@ -2222,6 +2224,96 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/demos/war-finance-default.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // ah_nuclear_program_clock — NEWTRIPOLI-ALTHIST-CHAINS-SPEC.md §2.
+  // Register: alt-history. Guest-legal: NO (Math.log10 seismic magnitude).
+  // -------------------------------------------------------------------------
+  server.registerTool('ah_nuclear_program_clock', {
+    title: 'Alt-history nuclear program clock (enrichment → first-device date + detection signature)',
+    description:
+      'Computes a program timeline from stipulated fissile inputs: time-to-critical-mass plus a fixed ' +
+      'engineering lead gives the first-device calendar year, and the standard yield→body-wave-magnitude ' +
+      'relation (mb = 4.0 + 0.75·log10 kt) plus test medium gives the detection signature. ' +
+      'Calibration figures are illustrative Manhattan/RDS-1-scale parameters, not asserted history. ' +
+      'Uses Math.log10 — deterministic and hash-verifiable, but NOT guest-legal / zk-provable in §18.',
+    inputSchema: {
+      program_start_year: z.number().min(1900).max(3000).default(1942).describe(
+        'Calendar year the program starts (calibration default 1942).'
+      ),
+      critical_mass_kg: z.number().min(0.1).max(1000).default(6.0).describe(
+        'Fissile critical mass required (kg; calibration default 6.0, Pu device order).'
+      ),
+      fissile_production_kg_yr: z.number().min(0.01).max(1e4).default(4.0).describe(
+        'Fissile production rate (kg/yr; calibration default 4.0).'
+      ),
+      engineering_lead_months: z.number().min(0).max(600).default(18).describe(
+        'Design/assembly overhead beyond fissile accumulation (months; default 18).'
+      ),
+      yield_kt: z.number().min(0.001).max(1e5).default(20).describe(
+        'Device yield (kt; calibration default 20, Trinity order).'
+      ),
+      test_medium: z.enum(['atmospheric', 'underground']).default('atmospheric').describe(
+        'Test medium — atmospheric fallout is directly detectable; underground relies on seismic mb.'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ program_start_year, critical_mass_kg, fissile_production_kg_yr, engineering_lead_months, yield_kt, test_medium }) => {
+    const input_parameters = {
+      program_start_year:       program_start_year ?? 1942,
+      critical_mass_kg:         critical_mass_kg ?? 6.0,
+      fissile_production_kg_yr: fissile_production_kg_yr ?? 4.0,
+      engineering_lead_months:  engineering_lead_months ?? 18,
+      yield_kt:                 yield_kt ?? 20,
+      test_medium:              test_medium ?? 'atmospheric',
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = nuclearProgramClockCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/nuclear_program_clock',
+      tool_id: 'ah-nuclear-program-clock',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['alt-history'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'alt-history',
+        data_sources: [
+          'Alt History - The Undisclosed Program.md (program-clock thread)',
+          'Smyth Report (1945) / Frisch-Peierls memo (1940) (calibration)',
+          'Soviet RDS-1 test 1949 + Vela/AFTAC detection record (calibration)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/demos/nuclear-program-clock.html',
       },
     };
     artifact.audit_signature.build_identity = {

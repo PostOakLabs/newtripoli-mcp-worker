@@ -84,6 +84,7 @@ function buildChecks(C) {
   const sc = kernelSrc('selection-cost');
   const ib = kernelSrc('interface-bandwidth');
   const wf = kernelSrc('war-finance');
+  const nc = kernelSrc('nuclear-clock');
   const augCeil = C.feasibility.augmentation.map((a) => a.ceiling);
   return [
     ['time-dilation SERIES0_CEILING',  extractConst(td, 'SERIES0_CEILING'),  C.series[0].ceiling],
@@ -132,6 +133,11 @@ function buildChecks(C) {
     ['war-finance WF_WAR_COST',      extractConst(wf, 'WF_WAR_COST'),      C.altHistory.warFinance.warCostPerYear],
     ['war-finance WF_DEBT_SERVICE',  extractConst(wf, 'WF_DEBT_SERVICE'),  C.altHistory.warFinance.debtServiceRate],
     ['war-finance WF_HORIZON_YEARS', extractConst(wf, 'WF_HORIZON_YEARS'), C.altHistory.warFinance.horizonYears],
+    ['nuclear-clock NC_START_YEAR',   extractConst(nc, 'NC_START_YEAR'),   C.altHistory.nuclearClock.programStartYear],
+    ['nuclear-clock NC_CRIT_MASS_KG', extractConst(nc, 'NC_CRIT_MASS_KG'), C.altHistory.nuclearClock.criticalMassKg],
+    ['nuclear-clock NC_PROD_RATE',    extractConst(nc, 'NC_PROD_RATE'),    C.altHistory.nuclearClock.fissileProductionKgYr],
+    ['nuclear-clock NC_LEAD_MONTHS',  extractConst(nc, 'NC_LEAD_MONTHS'),  C.altHistory.nuclearClock.engineeringLeadMonths],
+    ['nuclear-clock NC_YIELD_KT',     extractConst(nc, 'NC_YIELD_KT'),     C.altHistory.nuclearClock.yieldKt],
   ];
   // NOTE: kinetic-probe C_MS (2.998e8) is a flagged real-science constant, NOT in canon — SKIPPED
   // by design (assert presence + comment, not a canon diff). Presence is confirmed by node --check

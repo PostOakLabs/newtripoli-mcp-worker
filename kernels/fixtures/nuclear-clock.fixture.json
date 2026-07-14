@@ -1,0 +1,8 @@
+{
+  "program_start_year": 1942,
+  "critical_mass_kg": 6.0,
+  "fissile_production_kg_yr": 4.0,
+  "engineering_lead_months": 18,
+  "yield_kt": 20,
+  "test_medium": "atmospheric"
+}
