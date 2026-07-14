@@ -26,6 +26,7 @@ import { compute as warFinanceDefaultCompute } from './kernels/war-finance.kerne
 import { compute as nuclearProgramClockCompute } from './kernels/nuclear-clock.kernel.mjs';
 import { compute as attributionDecayCompute } from './kernels/attribution-decay.kernel.mjs';
 import { compute as injusticeLedgerCompute } from './kernels/injustice-ledger.kernel.mjs';
+import { compute as stadiumCapacityCompute } from './kernels/stadium-capacity.kernel.mjs';
 
 export const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -43,7 +44,7 @@ const NT_ARTIFACT_VERSION = '1.0.0';
 // OCG Standard §17 (Kernel Identity Binding) — content digest of this file, computed by
 // generate.mjs over the LF-normalized source with this line's value replaced by the literal
 // 'PLACEHOLDER'. Populated by `node generate.mjs`; idempotent (re-running yields no diff).
-const KERNEL_DIGEST = 'sha256:543bf55b3550691800009b8b2e149db2d68ad541f275cc5d084e4a030f5d406a';
+const KERNEL_DIGEST = 'sha256:74a0278347b58674bf0bbf390398b2bdf734c832b3866043bbdbf08e83549875';
 
 // Vendored from AINumbers ChainGraph SSOT kernels/_hash.mjs (OCG Standard §4 JCS).
 // Namespace adapted for me.newtripoli. Recursive key sort + per-value
@@ -289,6 +290,7 @@ export const KERNEL_REGISTRY = {
   ah_nuclear_program_clock: { compute: nuclearProgramClockCompute, mandate_type: 'me.newtripoli/nuclear_program_clock' },
   ah_attribution_decay: { compute: attributionDecayCompute, mandate_type: 'me.newtripoli/attribution_decay' },
   ah_injustice_ledger: { compute: injusticeLedgerCompute, mandate_type: 'me.newtripoli/injustice_ledger' },
+  ch_stadium_capacity: { compute: stadiumCapacityCompute, mandate_type: 'me.newtripoli/stadium_capacity' },
 };
 
 // ---------------------------------------------------------------------------
@@ -2508,6 +2510,97 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/demos/injustice-ledger.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // ch_stadium_capacity — NEWTRIPOLI-ALTHIST-CHAINS-SPEC.md §5.
+  // Register: alt-history. Guest-legal: NO (Math.cos irradiance — hash-verifiable only).
+  // -------------------------------------------------------------------------
+  server.registerTool('ch_stadium_capacity', {
+    title: 'Stadium-capacity geometry (population/irradiance → footprint, fits_single_stadium)',
+    description:
+      'Sizes the New Tripoli "single stadium civilization" image: physical substrate footprint ' +
+      '(population × per-mind area) against a large-stadium footprint, alongside the solar-panel area the ' +
+      'matching power supply would need (population × per-mind watts ÷ latitude irradiance). The honest ' +
+      'tension is that the substrate fits a stadium while the power needs a desert. Irradiance uses ' +
+      'GHI ≈ 5·cos(lat); calibration figures are illustrative, tunable parameters cited to the record. ' +
+      'Uses Math.cos — hash-verifiable only, not a §18 zk candidate.',
+    inputSchema: {
+      population: z.number().min(1).max(1e11).default(8.1e9).describe(
+        'Hosted population / minds (default 8.1e9 = canon.js population.humans).'
+      ),
+      latitude: z.number().min(0).max(89).default(45).describe(
+        'Panel-field latitude in degrees (0..89; GHI ≈ 5·cos(lat); default 45).'
+      ),
+      power_per_capita_w: z.number().min(0).max(1e6).default(20).describe(
+        'Continuous power per hosted mind in watts (default 20).'
+      ),
+      panel_efficiency: z.number().min(1e-9).max(1).default(0.22).describe(
+        'PV panel efficiency fraction (modern PV ~0.22; default 0.22).'
+      ),
+      stadium_area_m2: z.number().min(1).max(1e7).default(200000).describe(
+        'Reference large-stadium footprint in m² incl. grounds (default 200000).'
+      ),
+      area_per_capita_m2: z.number().min(1e-9).max(1e3).default(1e-6).describe(
+        'Substrate footprint per hosted mind in m² (default 1e-6).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ population, latitude, power_per_capita_w, panel_efficiency, stadium_area_m2, area_per_capita_m2 }) => {
+    const input_parameters = {
+      population:          population ?? 8.1e9,
+      latitude:            latitude ?? 45,
+      power_per_capita_w:  power_per_capita_w ?? 20,
+      panel_efficiency:    panel_efficiency ?? 0.22,
+      stadium_area_m2:     stadium_area_m2 ?? 200000,
+      area_per_capita_m2:  area_per_capita_m2 ?? 1e-6,
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = stadiumCapacityCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/stadium_capacity',
+      tool_id: 'ch-stadium-capacity',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['alt-history'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'alt-history',
+        data_sources: [
+          'Canon - New Tripoli.md §Stadium (single-stadium civilization image)',
+          'GHI ≈ 5·cos(lat) irradiance model (ENHANCEMENTS §7, calibration)',
+          'Modern PV efficiency ~22% (calibration)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/demos/stadium-capacity.html',
       },
     };
     artifact.audit_signature.build_identity = {

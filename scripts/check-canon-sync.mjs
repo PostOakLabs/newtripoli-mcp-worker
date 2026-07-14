@@ -87,6 +87,7 @@ function buildChecks(C) {
   const nc = kernelSrc('nuclear-clock');
   const ad = kernelSrc('attribution-decay');
   const ij = kernelSrc('injustice-ledger');
+  const st = kernelSrc('stadium-capacity');
   const augCeil = C.feasibility.augmentation.map((a) => a.ceiling);
   return [
     ['time-dilation SERIES0_CEILING',  extractConst(td, 'SERIES0_CEILING'),  C.series[0].ceiling],
@@ -149,6 +150,13 @@ function buildChecks(C) {
     ['injustice-ledger IJ_DISPLACE_WEIGHT', extractConst(ij, 'IJ_DISPLACE_WEIGHT'), C.altHistory.injustice.displacementWeight],
     ['injustice-ledger IJ_SOV_WEIGHT',      extractConst(ij, 'IJ_SOV_WEIGHT'),      C.altHistory.injustice.sovereigntyWeight],
     ['injustice-ledger IJ_MAX_BRANCHES',    extractConst(ij, 'IJ_MAX_BRANCHES'),    C.altHistory.injustice.maxBranches],
+    ['stadium-capacity ST_GHI_EQUATOR',   extractConst(st, 'ST_GHI_EQUATOR'),   C.altHistory.stadium.ghiEquatorKwh],
+    ['stadium-capacity ST_LATITUDE',      extractConst(st, 'ST_LATITUDE'),      C.altHistory.stadium.latitudeDeg],
+    ['stadium-capacity ST_POWER_PER_CAP', extractConst(st, 'ST_POWER_PER_CAP'), C.altHistory.stadium.powerPerCapitaW],
+    ['stadium-capacity ST_PANEL_EFF',     extractConst(st, 'ST_PANEL_EFF'),     C.altHistory.stadium.panelEfficiency],
+    ['stadium-capacity ST_STADIUM_AREA',  extractConst(st, 'ST_STADIUM_AREA'),  C.altHistory.stadium.stadiumAreaM2],
+    ['stadium-capacity ST_AREA_PER_CAP',  extractConst(st, 'ST_AREA_PER_CAP'),  C.altHistory.stadium.areaPerCapitaM2],
+    ['stadium-capacity HUMANS',           extractConst(st, 'HUMANS'),           C.population.humans],
   ];
   // NOTE: kinetic-probe C_MS (2.998e8) is a flagged real-science constant, NOT in canon — SKIPPED
   // by design (assert presence + comment, not a canon diff). Presence is confirmed by node --check

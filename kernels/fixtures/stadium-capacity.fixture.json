@@ -1,0 +1,8 @@
+{
+  "population": 8.1e9,
+  "latitude": 45,
+  "power_per_capita_w": 20,
+  "panel_efficiency": 0.22,
+  "stadium_area_m2": 200000,
+  "area_per_capita_m2": 1e-6
+}
