@@ -1,0 +1,11 @@
+{
+  "branches": [
+    { "id": "branch_A", "direct_deaths": 500000,  "indirect_deaths": 3000000, "refugees": 1000000, "idps": 500000, "sovereignty_lost": 0.2 },
+    { "id": "branch_B", "direct_deaths": 1200000, "indirect_deaths": 800000,  "refugees": 300000,  "idps": 200000, "sovereignty_lost": 0.5 },
+    { "id": "branch_C", "direct_deaths": 800000,  "indirect_deaths": 1500000, "refugees": 600000,  "idps": 400000, "sovereignty_lost": 0.3 }
+  ],
+  "indirect_multiplier": 3.5,
+  "include_indirect": true,
+  "displacement_weight": 0.1,
+  "sovereignty_weight": 1000000
+}

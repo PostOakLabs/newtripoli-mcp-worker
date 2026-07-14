@@ -86,6 +86,7 @@ function buildChecks(C) {
   const wf = kernelSrc('war-finance');
   const nc = kernelSrc('nuclear-clock');
   const ad = kernelSrc('attribution-decay');
+  const ij = kernelSrc('injustice-ledger');
   const augCeil = C.feasibility.augmentation.map((a) => a.ceiling);
   return [
     ['time-dilation SERIES0_CEILING',  extractConst(td, 'SERIES0_CEILING'),  C.series[0].ceiling],
@@ -144,6 +145,10 @@ function buildChecks(C) {
     ['attribution-decay AD_THRESHOLD',     extractConst(ad, 'AD_THRESHOLD'),     C.altHistory.attributionDecay.threshold],
     ['attribution-decay AD_TEST_BOOST',    extractConst(ad, 'AD_TEST_BOOST'),    C.altHistory.attributionDecay.testBoostPerCorroboration],
     ['attribution-decay AD_HORIZON_YEARS', extractConst(ad, 'AD_HORIZON_YEARS'), C.altHistory.attributionDecay.horizonYears],
+    ['injustice-ledger IJ_INDIRECT_MULT',   extractConst(ij, 'IJ_INDIRECT_MULT'),   C.altHistory.injustice.indirectMultiplier],
+    ['injustice-ledger IJ_DISPLACE_WEIGHT', extractConst(ij, 'IJ_DISPLACE_WEIGHT'), C.altHistory.injustice.displacementWeight],
+    ['injustice-ledger IJ_SOV_WEIGHT',      extractConst(ij, 'IJ_SOV_WEIGHT'),      C.altHistory.injustice.sovereigntyWeight],
+    ['injustice-ledger IJ_MAX_BRANCHES',    extractConst(ij, 'IJ_MAX_BRANCHES'),    C.altHistory.injustice.maxBranches],
   ];
   // NOTE: kinetic-probe C_MS (2.998e8) is a flagged real-science constant, NOT in canon — SKIPPED
   // by design (assert presence + comment, not a canon diff). Presence is confirmed by node --check

@@ -25,6 +25,7 @@ import { compute as feasibilityCrosswalkCompute } from './kernels/feasibility-cr
 import { compute as warFinanceDefaultCompute } from './kernels/war-finance.kernel.mjs';
 import { compute as nuclearProgramClockCompute } from './kernels/nuclear-clock.kernel.mjs';
 import { compute as attributionDecayCompute } from './kernels/attribution-decay.kernel.mjs';
+import { compute as injusticeLedgerCompute } from './kernels/injustice-ledger.kernel.mjs';
 
 export const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -42,7 +43,7 @@ const NT_ARTIFACT_VERSION = '1.0.0';
 // OCG Standard §17 (Kernel Identity Binding) — content digest of this file, computed by
 // generate.mjs over the LF-normalized source with this line's value replaced by the literal
 // 'PLACEHOLDER'. Populated by `node generate.mjs`; idempotent (re-running yields no diff).
-const KERNEL_DIGEST = 'sha256:9e459536ca87793a2a7920c43b43caa3ce3996b80e6dd3c8c8761ffb00bd9762';
+const KERNEL_DIGEST = 'sha256:543bf55b3550691800009b8b2e149db2d68ad541f275cc5d084e4a030f5d406a';
 
 // Vendored from AINumbers ChainGraph SSOT kernels/_hash.mjs (OCG Standard §4 JCS).
 // Namespace adapted for me.newtripoli. Recursive key sort + per-value
@@ -287,6 +288,7 @@ export const KERNEL_REGISTRY = {
   ah_war_finance_default: { compute: warFinanceDefaultCompute, mandate_type: 'me.newtripoli/war_finance_default' },
   ah_nuclear_program_clock: { compute: nuclearProgramClockCompute, mandate_type: 'me.newtripoli/nuclear_program_clock' },
   ah_attribution_decay: { compute: attributionDecayCompute, mandate_type: 'me.newtripoli/attribution_decay' },
+  ah_injustice_ledger: { compute: injusticeLedgerCompute, mandate_type: 'me.newtripoli/injustice_ledger' },
 };
 
 // ---------------------------------------------------------------------------
@@ -2406,6 +2408,106 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/demos/attribution-decay.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // ah_injustice_ledger — NEWTRIPOLI-ALTHIST-CHAINS-SPEC.md §4.
+  // Register: alt-history. Guest-legal: YES (sum/multiply/compare/sort over a bounded branch array).
+  // -------------------------------------------------------------------------
+  server.registerTool('ah_injustice_ledger', {
+    title: 'Alt-history injustice ledger (branch tolls → unstable-ranking verdict)',
+    description:
+      'Scores each alt-history branch two ways — direct battle-deaths only, and full-weighted (adding ' +
+      'indirect deaths, displacement, and lost sovereignty) — then compares the least-unjust leaders. The ' +
+      'thesis is unstable ranking: which branch is "least unjust" flips under defensible counting rules, so ' +
+      'the accounting is the exposed, adjustable argument. Branch tolls and weights are illustrative ' +
+      'conflict-coding-scale parameters, not asserted history. Uses only sum/multiply/compare/sort (no ' +
+      'transcendentals) — guest-legal / §18 zk candidate.',
+    inputSchema: {
+      branches: z.array(z.object({
+        id:               z.string(),
+        direct_deaths:    z.number(),
+        indirect_deaths:  z.number(),
+        refugees:         z.number(),
+        idps:             z.number(),
+        sovereignty_lost: z.number().min(0).max(1),
+      })).min(1).max(20).default([
+        { id: 'branch_A', direct_deaths: 500000,  indirect_deaths: 3000000, refugees: 1000000, idps: 500000, sovereignty_lost: 0.2 },
+        { id: 'branch_B', direct_deaths: 1200000, indirect_deaths: 800000,  refugees: 300000,  idps: 200000, sovereignty_lost: 0.5 },
+        { id: 'branch_C', direct_deaths: 800000,  indirect_deaths: 1500000, refugees: 600000,  idps: 400000, sovereignty_lost: 0.3 },
+      ]).describe('Alt-history branches to grade (1..20 entries; calibration default is 3 illustrative branches).'),
+      indirect_multiplier: z.number().min(0).max(100).default(3.5).describe(
+        'Indirect:direct deaths multiplier (Geneva Declaration 3–4× band; default 3.5).'
+      ),
+      include_indirect: z.boolean().default(true).describe(
+        'Whether the active accounting counts indirect deaths (the toggle that flips the ranking).'
+      ),
+      displacement_weight: z.number().min(0).max(1e6).default(0.1).describe(
+        'Injustice units per displaced person (refugees + IDPs; default 0.1).'
+      ),
+      sovereignty_weight: z.number().min(0).max(1e12).default(1e6).describe(
+        'Injustice units per unit of sovereignty lost (0..1 per branch; default 1e6).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ branches, indirect_multiplier, include_indirect, displacement_weight, sovereignty_weight }) => {
+    const input_parameters = {
+      branches: branches ?? [
+        { id: 'branch_A', direct_deaths: 500000,  indirect_deaths: 3000000, refugees: 1000000, idps: 500000, sovereignty_lost: 0.2 },
+        { id: 'branch_B', direct_deaths: 1200000, indirect_deaths: 800000,  refugees: 300000,  idps: 200000, sovereignty_lost: 0.5 },
+        { id: 'branch_C', direct_deaths: 800000,  indirect_deaths: 1500000, refugees: 600000,  idps: 400000, sovereignty_lost: 0.3 },
+      ],
+      indirect_multiplier: indirect_multiplier ?? 3.5,
+      include_indirect:    include_indirect ?? true,
+      displacement_weight: displacement_weight ?? 0.1,
+      sovereignty_weight:  sovereignty_weight ?? 1e6,
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = injusticeLedgerCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/injustice_ledger',
+      tool_id: 'ah-injustice-ledger',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['alt-history'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'alt-history',
+        data_sources: [
+          'NEWTRIPOLI-ALTHIST-REFRAME-TRIAGE.md #12 (unstable-ranking thesis)',
+          'UCDP/PRIO + COW conflict-coding methodology (calibration)',
+          'Geneva Declaration Global Burden of Armed Violence — indirect:direct band (calibration)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/demos/injustice-ledger.html',
       },
     };
     artifact.audit_signature.build_identity = {
