@@ -25,6 +25,11 @@ import { compute as interfaceBandwidthCompute }  from '../kernels/interface-band
 import { compute as techTreePathCompute }        from '../kernels/tech-tree.kernel.mjs';
 import { compute as provenanceCompute }          from '../kernels/provenance.kernel.mjs';
 import { compute as feasibilityCrosswalkCompute } from '../kernels/feasibility-crosswalk.kernel.mjs';
+import { compute as warFinanceDefaultCompute }    from '../kernels/war-finance.kernel.mjs';
+import { compute as nuclearProgramClockCompute }  from '../kernels/nuclear-clock.kernel.mjs';
+import { compute as attributionDecayCompute }     from '../kernels/attribution-decay.kernel.mjs';
+import { compute as injusticeLedgerCompute }      from '../kernels/injustice-ledger.kernel.mjs';
+import { compute as stadiumCapacityCompute }      from '../kernels/stadium-capacity.kernel.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -43,6 +48,11 @@ export const TOOLS = [
   { id: 'nt_tech_tree_path',       slug: 'tech-tree',            compute: techTreePathCompute },
   { id: 'nt_provenance',           slug: 'provenance',           compute: provenanceCompute },
   { id: 'nt_feasibility_crosswalk', slug: 'feasibility-crosswalk', compute: feasibilityCrosswalkCompute },
+  { id: 'ah_war_finance_default',  slug: 'war-finance',          compute: warFinanceDefaultCompute },
+  { id: 'ah_nuclear_program_clock', slug: 'nuclear-clock',       compute: nuclearProgramClockCompute },
+  { id: 'ah_attribution_decay',    slug: 'attribution-decay',    compute: attributionDecayCompute },
+  { id: 'ah_injustice_ledger',     slug: 'injustice-ledger',     compute: injusticeLedgerCompute },
+  { id: 'ch_stadium_capacity',     slug: 'stadium-capacity',     compute: stadiumCapacityCompute },
 ];
 
 export function workerCanonVersion() {

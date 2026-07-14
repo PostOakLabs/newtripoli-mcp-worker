@@ -9,7 +9,7 @@
         "anchor"
       ],
       "expected_ranking_stable": false,
-      "expected_composite_hash": null
+      "expected_composite_hash": "f6539889b958065580da4d1bb7de2133832dfa51cdfc433d73d4fd881344ab00"
     },
     {
       "branch": "stable",
@@ -23,7 +23,7 @@
         "anchor"
       ],
       "expected_ranking_stable": true,
-      "expected_composite_hash": null
+      "expected_composite_hash": "16dc8056af70dfb3e519b71fa22ba4bf1cb35f141b1915c29f79c6429abef537"
     }
   ]
 }

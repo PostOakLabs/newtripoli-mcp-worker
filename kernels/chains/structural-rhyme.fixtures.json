@@ -14,7 +14,7 @@
         "clock": true,
         "decay": true
       },
-      "expected_composite_hash": null
+      "expected_composite_hash": "c24bd5e0ce8d89b5f669f312b15410b9cfb906c625386ea57caca7e2010796a7"
     },
     {
       "branch": "diverging",
@@ -33,7 +33,7 @@
         "clock": false,
         "decay": true
       },
-      "expected_composite_hash": null
+      "expected_composite_hash": "2f138d8b7e0aa2cfa21e2e5d6a2fbc4d926d144551221cbc6d5620b9a5fb1f9b"
     }
   ]
 }

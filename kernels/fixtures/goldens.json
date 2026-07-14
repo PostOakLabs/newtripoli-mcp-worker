@@ -1,9 +1,9 @@
 {
   "_meta": {
     "canon_version": "2026.07.12",
-    "frozen_at": "2026-07-12",
+    "frozen_at": "2026-07-13",
     "parity_verified": true,
-    "note": "13 tool goldens (3 L1 + 9 L2 + 1 meta) — bare-hex execution_hash at fixture (default) inputs. Regenerate via freeze-goldens.mjs."
+    "note": "18 tool goldens (3 L1 + 9 L2 + 1 meta + 5 alt-history) — bare-hex execution_hash at fixture (default) inputs. Regenerate via freeze-goldens.mjs."
   },
   "nt_time_dilation": {
     "execution_hash": "5a311b5720c29ba84f0365967ef7d524fd10662c523e12a9ab50b8066d7fe977"
@@ -43,5 +43,20 @@
   },
   "nt_feasibility_crosswalk": {
     "execution_hash": "43889231b502736792e83001d900f867d65d3a92d4bf4640c72bd51b21b08729"
+  },
+  "ah_war_finance_default": {
+    "execution_hash": "6e08e7187f3341d74db2390619c8aac8076242fcbfe5d0b7587b63253b83a158"
+  },
+  "ah_nuclear_program_clock": {
+    "execution_hash": "29c7ce3f7a13b4d782b9f3399772596737063bb25a6122d04bbbbd5ddfb87e6f"
+  },
+  "ah_attribution_decay": {
+    "execution_hash": "aec5356bc8130a4d9a2772dc1bafe87eae9fb402307f9aa99851309061781bb3"
+  },
+  "ah_injustice_ledger": {
+    "execution_hash": "2c1055dff88f7745226a08c5238a56e1e79eecf5d030e33cbb2942199fbf4bc8"
+  },
+  "ch_stadium_capacity": {
+    "execution_hash": "518a688505b54fef16a10f15401d117a67603baba0f8fa36d86d5199974a1392"
   }
 }

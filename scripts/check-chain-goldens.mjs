@@ -30,7 +30,33 @@ function buildSteps(chainKey, stepOverrides = {}) {
 async function runCase(chainKey, c) {
   const steps = buildSteps(chainKey, c.step_overrides);
   const res = await runChain(CHAINS[chainKey].title, steps);
-  return { composite: res.composite_execution_hash, path: res.path_taken };
+  return { composite: res.composite_execution_hash, path: res.path_taken, steps: res.steps };
+}
+
+// step id -> per-step execution_hash (RAN steps only), for the structural-rhyme
+// partial-hash proof (ALTHIST-CHAINS-SPEC §5.1 / §8B.2). runChain does NOT fold the
+// parent hash into a step preimage, so two steps rhyme iff their knobs are identical.
+function stepHashMap(steps) {
+  const m = new Map();
+  for (const s of steps ?? []) {
+    if (s?.status === 'ok' && s.artifact?.execution_hash) m.set(s.id, s.artifact.execution_hash);
+  }
+  return m;
+}
+
+// Assert a case's expected_rhyme against the 4 structural-rhyme step hashes.
+// clock rhyme = a_clock.hash === b_clock.hash; decay rhyme = a_decay.hash === b_decay.hash.
+function checkRhyme(file, c, steps) {
+  const h = stepHashMap(steps);
+  const need = ['a_clock', 'a_decay', 'b_clock', 'b_decay'];
+  const missing = need.filter((id) => !h.has(id));
+  if (missing.length) return [`${file} [${c.branch}]: rhyme steps missing hashes: ${missing.join(',')}`];
+  const clock = h.get('a_clock') === h.get('b_clock');
+  const decay = h.get('a_decay') === h.get('b_decay');
+  const out = [];
+  if (clock !== c.expected_rhyme.clock) out.push(`${file} [${c.branch}]: clock rhyme=${clock} != expected ${c.expected_rhyme.clock} (a_clock vs b_clock hash)`);
+  if (decay !== c.expected_rhyme.decay) out.push(`${file} [${c.branch}]: decay rhyme=${decay} != expected ${c.expected_rhyme.decay} (a_decay vs b_decay hash)`);
+  return out;
 }
 
 const files = readdirSync(CHAINS_DIR).filter((f) => f.endsWith('.fixtures.json')).sort();
@@ -44,9 +70,9 @@ for (const file of files) {
 
   const seen = new Map(); // composite -> branch (within-chain distinctness)
   for (const c of fixture.cases) {
-    let composite, taken;
+    let composite, taken, stepsRan;
     try {
-      ({ composite, path: taken } = await runCase(chainKey, c));
+      ({ composite, path: taken, steps: stepsRan } = await runCase(chainKey, c));
     } catch (e) {
       diffs.push(`${file} [${c.branch}]: runChain THREW — ${e.message}`);
       continue;
@@ -58,6 +84,10 @@ for (const file of files) {
     if (!pathEq(taken, c.expected_path_taken)) {
       diffs.push(`${file} [${c.branch}]: path_taken ${JSON.stringify(taken)} != expected ${JSON.stringify(c.expected_path_taken)}`);
       continue;
+    }
+    if (c.expected_rhyme) {
+      const rhymeDiffs = checkRhyme(file, c, stepsRan);
+      if (rhymeDiffs.length) { diffs.push(...rhymeDiffs); continue; }
     }
     if (seen.has(composite)) {
       diffs.push(`${file} [${c.branch}]: composite collides with branch '${seen.get(composite)}' (gate not distinguishing)`);

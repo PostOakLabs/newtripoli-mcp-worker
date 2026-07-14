@@ -19,9 +19,9 @@ const { canon_version, hashes, errors } = await reproduceAll();
 const out = {
   _meta: {
     canon_version,
-    frozen_at: '2026-07-12',
+    frozen_at: '2026-07-13',
     parity_verified: parityVerified,
-    note: '12 tool goldens (3 L1 + 9 L2) — bare-hex execution_hash at fixture (default) inputs. Regenerate via freeze-goldens.mjs.',
+    note: '18 tool goldens (3 L1 + 9 L2 + 1 meta + 5 alt-history) — bare-hex execution_hash at fixture (default) inputs. Regenerate via freeze-goldens.mjs.',
   },
 };
 for (const t of TOOLS) {
