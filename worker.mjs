@@ -44,7 +44,7 @@ const NT_ARTIFACT_VERSION = '1.0.0';
 // OCG Standard §17 (Kernel Identity Binding) — content digest of this file, computed by
 // generate.mjs over the LF-normalized source with this line's value replaced by the literal
 // 'PLACEHOLDER'. Populated by `node generate.mjs`; idempotent (re-running yields no diff).
-const KERNEL_DIGEST = 'sha256:65e34dc81aa6825bdbd0e8b50d5f7c5414787a7efe9ecf28023434a28283355a';
+const KERNEL_DIGEST = 'sha256:573b75b0e884f30662bdb2c01a0cc425224d54607723d77d15286341bd4a235e';
 
 // Vendored from AINumbers ChainGraph SSOT kernels/_hash.mjs (OCG Standard §4 JCS).
 // Namespace adapted for me.newtripoli. Recursive key sort + per-value
@@ -494,6 +494,81 @@ export const TOOL_META = {
       'direction', 'your_rate_x', 'their_rate_x', 'latency_ms', 'variant',
     ],
     compliance_flags: ['feasibility', 'canon'],
+  },
+  ah_war_finance_default: {
+    slug: 'war-finance-default',
+    title: 'Alt-history war-finance default (treasury drain → default year → act-of-war clause)',
+    description: 'Computes an accounting identity over stipulated war finances: a HORIZON-bounded year loop drains reserves by (war cost + debt interest − revenue), financing each deficit with debt, and reports the first year reserves fall below the default threshold, the default calendar year, terminal reserves, compounded debt, and whether an act-of-war clause is tripped.',
+    register: 'alt-history',
+    guest_legal: true,
+    permalink_path: 'ch-sims/demos/war-finance-default.html',
+    citations: [
+      'Alt History - What if WW1 had been avoided.md (Big Six war-finance thread)',
+      'Inter-Allied war debts + 1917 Liberty Loans (calibration)',
+      '1932 Lausanne Conference default / gold-standard suspensions (calibration)',
+    ],
+    inputs: ['annual_revenue', 'war_cost_per_year', 'starting_reserves', 'starting_debt', 'debt_service_rate', 'default_threshold', 'act_of_war_clause', 'start_year'],
+    compliance_flags: ['alt-history'],
+  },
+  ah_nuclear_program_clock: {
+    slug: 'nuclear-program-clock',
+    title: 'Alt-history nuclear program clock (enrichment → first-device date + detection signature)',
+    description: 'Computes a program timeline from stipulated fissile inputs: time-to-critical-mass plus a fixed engineering lead gives the first-device calendar year, and the standard yield→body-wave-magnitude relation (mb = 4.0 + 0.75·log10 kt) plus test medium gives the detection signature.',
+    register: 'alt-history',
+    guest_legal: false,
+    permalink_path: 'ch-sims/demos/nuclear-program-clock.html',
+    citations: [
+      'Alt History - The Undisclosed Program.md (program-clock thread)',
+      'Smyth Report (1945) / Frisch-Peierls memo (1940) (calibration)',
+      'Soviet RDS-1 test 1949 + Vela/AFTAC detection record (calibration)',
+    ],
+    inputs: ['program_start_year', 'critical_mass_kg', 'fissile_production_kg_yr', 'engineering_lead_months', 'yield_kt', 'test_medium'],
+    compliance_flags: ['alt-history'],
+  },
+  ah_attribution_decay: {
+    slug: 'attribution-decay',
+    title: 'Alt-history attribution decay (evidence age + censorship → attribution-confidence curve)',
+    description: 'Computes an attribution-confidence curve from stipulated inputs: an initial confidence decays geometrically per year (accelerated by a censorship factor), while corroborating tests pull it back toward certainty, and a bounded scan reports the year confidence first crosses the deniability threshold.',
+    register: 'alt-history',
+    guest_legal: true,
+    permalink_path: 'ch-sims/demos/attribution-decay.html',
+    citations: [
+      'Alt History - The Undisclosed Program.md (attribution thread)',
+      'Nuclear forensics + Vela/AFTAC detection record (calibration)',
+      'Cold War censorship / plausible-deniability historiography (calibration)',
+    ],
+    inputs: ['initial_confidence', 'decay_per_year', 'years_elapsed', 'censorship_factor', 'corroborating_tests', 'threshold'],
+    compliance_flags: ['alt-history'],
+  },
+  ah_injustice_ledger: {
+    slug: 'injustice-ledger',
+    title: 'Alt-history injustice ledger (branch tolls → unstable-ranking verdict)',
+    description: 'Scores each alt-history branch two ways — direct battle-deaths only, and full-weighted (adding indirect deaths, displacement, and lost sovereignty) — then compares the least-unjust leaders.',
+    register: 'alt-history',
+    guest_legal: true,
+    permalink_path: 'ch-sims/demos/injustice-ledger.html',
+    citations: [
+      'NEWTRIPOLI-ALTHIST-REFRAME-TRIAGE.md #12 (unstable-ranking thesis)',
+      'UCDP/PRIO + COW conflict-coding methodology (calibration)',
+      'Geneva Declaration Global Burden of Armed Violence — indirect:direct band (calibration)',
+    ],
+    inputs: ['branches', 'indirect_multiplier', 'include_indirect', 'displacement_weight', 'sovereignty_weight'],
+    compliance_flags: ['alt-history'],
+  },
+  ch_stadium_capacity: {
+    slug: 'stadium-capacity',
+    title: 'Stadium-capacity geometry (population/irradiance → footprint, fits_single_stadium)',
+    description: 'Sizes the New Tripoli "single stadium civilization" image: physical substrate footprint (population × per-mind area) against a large-stadium footprint, alongside the solar-panel area the matching power supply would need (population × per-mind watts ÷ latitude irradiance).',
+    register: 'alt-history',
+    guest_legal: false,
+    permalink_path: 'ch-sims/demos/stadium-capacity.html',
+    citations: [
+      'Canon - New Tripoli.md §Stadium (single-stadium civilization image)',
+      'GHI ≈ 5·cos(lat) irradiance model (ENHANCEMENTS §7, calibration)',
+      'Modern PV efficiency ~22% (calibration)',
+    ],
+    inputs: ['population', 'latitude', 'power_per_capita_w', 'panel_efficiency', 'stadium_area_m2', 'area_per_capita_m2'],
+    compliance_flags: ['alt-history'],
   },
 };
 
