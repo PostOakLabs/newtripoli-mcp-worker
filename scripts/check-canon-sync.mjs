@@ -85,6 +85,7 @@ function buildChecks(C) {
   const ib = kernelSrc('interface-bandwidth');
   const wf = kernelSrc('war-finance');
   const nc = kernelSrc('nuclear-clock');
+  const ad = kernelSrc('attribution-decay');
   const augCeil = C.feasibility.augmentation.map((a) => a.ceiling);
   return [
     ['time-dilation SERIES0_CEILING',  extractConst(td, 'SERIES0_CEILING'),  C.series[0].ceiling],
@@ -138,6 +139,11 @@ function buildChecks(C) {
     ['nuclear-clock NC_PROD_RATE',    extractConst(nc, 'NC_PROD_RATE'),    C.altHistory.nuclearClock.fissileProductionKgYr],
     ['nuclear-clock NC_LEAD_MONTHS',  extractConst(nc, 'NC_LEAD_MONTHS'),  C.altHistory.nuclearClock.engineeringLeadMonths],
     ['nuclear-clock NC_YIELD_KT',     extractConst(nc, 'NC_YIELD_KT'),     C.altHistory.nuclearClock.yieldKt],
+    ['attribution-decay AD_INIT_CONF',     extractConst(ad, 'AD_INIT_CONF'),     C.altHistory.attributionDecay.initialConfidence],
+    ['attribution-decay AD_DECAY_YR',      extractConst(ad, 'AD_DECAY_YR'),      C.altHistory.attributionDecay.decayPerYear],
+    ['attribution-decay AD_THRESHOLD',     extractConst(ad, 'AD_THRESHOLD'),     C.altHistory.attributionDecay.threshold],
+    ['attribution-decay AD_TEST_BOOST',    extractConst(ad, 'AD_TEST_BOOST'),    C.altHistory.attributionDecay.testBoostPerCorroboration],
+    ['attribution-decay AD_HORIZON_YEARS', extractConst(ad, 'AD_HORIZON_YEARS'), C.altHistory.attributionDecay.horizonYears],
   ];
   // NOTE: kinetic-probe C_MS (2.998e8) is a flagged real-science constant, NOT in canon — SKIPPED
   // by design (assert presence + comment, not a canon diff). Presence is confirmed by node --check

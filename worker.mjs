@@ -24,6 +24,7 @@ import { compute as provenanceCompute } from './kernels/provenance.kernel.mjs';
 import { compute as feasibilityCrosswalkCompute } from './kernels/feasibility-crosswalk.kernel.mjs';
 import { compute as warFinanceDefaultCompute } from './kernels/war-finance.kernel.mjs';
 import { compute as nuclearProgramClockCompute } from './kernels/nuclear-clock.kernel.mjs';
+import { compute as attributionDecayCompute } from './kernels/attribution-decay.kernel.mjs';
 
 export const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -41,7 +42,7 @@ const NT_ARTIFACT_VERSION = '1.0.0';
 // OCG Standard §17 (Kernel Identity Binding) — content digest of this file, computed by
 // generate.mjs over the LF-normalized source with this line's value replaced by the literal
 // 'PLACEHOLDER'. Populated by `node generate.mjs`; idempotent (re-running yields no diff).
-const KERNEL_DIGEST = 'sha256:60e56560296768044c2c0c4d6a7b49a4e696883861e3e91cc7bcc2a709406b15';
+const KERNEL_DIGEST = 'sha256:9e459536ca87793a2a7920c43b43caa3ce3996b80e6dd3c8c8761ffb00bd9762';
 
 // Vendored from AINumbers ChainGraph SSOT kernels/_hash.mjs (OCG Standard §4 JCS).
 // Namespace adapted for me.newtripoli. Recursive key sort + per-value
@@ -285,6 +286,7 @@ export const KERNEL_REGISTRY = {
   nt_feasibility_crosswalk: { compute: feasibilityCrosswalkCompute, mandate_type: 'me.newtripoli/feasibility_crosswalk' },
   ah_war_finance_default: { compute: warFinanceDefaultCompute, mandate_type: 'me.newtripoli/war_finance_default' },
   ah_nuclear_program_clock: { compute: nuclearProgramClockCompute, mandate_type: 'me.newtripoli/nuclear_program_clock' },
+  ah_attribution_decay: { compute: attributionDecayCompute, mandate_type: 'me.newtripoli/attribution_decay' },
 };
 
 // ---------------------------------------------------------------------------
@@ -2314,6 +2316,96 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/demos/nuclear-program-clock.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // ah_attribution_decay — NEWTRIPOLI-ALTHIST-CHAINS-SPEC.md §3.
+  // Register: alt-history. Guest-legal: YES (integer-power decay loops + compare).
+  // -------------------------------------------------------------------------
+  server.registerTool('ah_attribution_decay', {
+    title: 'Alt-history attribution decay (evidence age + censorship → attribution-confidence curve)',
+    description:
+      'Computes an attribution-confidence curve from stipulated inputs: an initial confidence decays ' +
+      'geometrically per year (accelerated by a censorship factor), while corroborating tests pull it back ' +
+      'toward certainty, and a bounded scan reports the year confidence first crosses the deniability ' +
+      'threshold. Calibration figures are illustrative nuclear-forensics-scale parameters, not asserted ' +
+      'history. Uses only integer-power multiply loops + compare (no transcendentals) — guest-legal / §18 zk candidate.',
+    inputSchema: {
+      initial_confidence: z.number().min(0).max(1).default(0.95).describe(
+        'Attribution confidence at year zero (0..1; calibration default 0.95).'
+      ),
+      decay_per_year: z.number().min(0).max(1).default(0.15).describe(
+        'Fractional confidence lost per year before censorship (0..1; default 0.15).'
+      ),
+      years_elapsed: z.number().int().min(0).max(100).default(5).describe(
+        'Whole years elapsed since the event (0..100 horizon).'
+      ),
+      censorship_factor: z.number().min(0).max(1).default(0).describe(
+        'Extra fractional acceleration of decay from active censorship (0..1).'
+      ),
+      corroborating_tests: z.number().int().min(0).max(100).default(0).describe(
+        'Number of corroborating tests pulling confidence back toward certainty (0..100).'
+      ),
+      threshold: z.number().min(0).max(1).default(0.5).describe(
+        'Plausible-deniability line — confidence below this is DENIABLE (0..1; default 0.5).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ initial_confidence, decay_per_year, years_elapsed, censorship_factor, corroborating_tests, threshold }) => {
+    const input_parameters = {
+      initial_confidence:  initial_confidence ?? 0.95,
+      decay_per_year:      decay_per_year ?? 0.15,
+      years_elapsed:       years_elapsed ?? 5,
+      censorship_factor:   censorship_factor ?? 0,
+      corroborating_tests: corroborating_tests ?? 0,
+      threshold:           threshold ?? 0.5,
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = attributionDecayCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/attribution_decay',
+      tool_id: 'ah-attribution-decay',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['alt-history'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'alt-history',
+        data_sources: [
+          'Alt History - The Undisclosed Program.md (attribution thread)',
+          'Nuclear forensics + Vela/AFTAC detection record (calibration)',
+          'Cold War censorship / plausible-deniability historiography (calibration)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/demos/attribution-decay.html',
       },
     };
     artifact.audit_signature.build_identity = {

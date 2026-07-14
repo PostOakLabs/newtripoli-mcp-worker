@@ -1,0 +1,8 @@
+{
+  "initial_confidence": 0.95,
+  "decay_per_year": 0.15,
+  "years_elapsed": 5,
+  "censorship_factor": 0,
+  "corroborating_tests": 0,
+  "threshold": 0.5
+}
