@@ -83,6 +83,7 @@ function buildChecks(C) {
   const sb = kernelSrc('synthetic-body');
   const sc = kernelSrc('selection-cost');
   const ib = kernelSrc('interface-bandwidth');
+  const wf = kernelSrc('war-finance');
   const augCeil = C.feasibility.augmentation.map((a) => a.ceiling);
   return [
     ['time-dilation SERIES0_CEILING',  extractConst(td, 'SERIES0_CEILING'),  C.series[0].ceiling],
@@ -125,6 +126,12 @@ function buildChecks(C) {
       Object.keys(C.selection.criteria).map((k) => C.selection.criteria[k])],
     ['interface-bandwidth NEURONS',            extractConst(ib, 'NEURONS'),            C.feasibility.neurons],
     ['interface-bandwidth NEURALINK_CHANNELS', extractConst(ib, 'NEURALINK_CHANNELS'), C.feasibility.neuralinkChannels],
+    ['war-finance WF_START_YEAR',    extractConst(wf, 'WF_START_YEAR'),    C.altHistory.warFinance.startYear],
+    ['war-finance WF_RESERVES',      extractConst(wf, 'WF_RESERVES'),      C.altHistory.warFinance.startingReserves],
+    ['war-finance WF_REVENUE',       extractConst(wf, 'WF_REVENUE'),       C.altHistory.warFinance.annualRevenue],
+    ['war-finance WF_WAR_COST',      extractConst(wf, 'WF_WAR_COST'),      C.altHistory.warFinance.warCostPerYear],
+    ['war-finance WF_DEBT_SERVICE',  extractConst(wf, 'WF_DEBT_SERVICE'),  C.altHistory.warFinance.debtServiceRate],
+    ['war-finance WF_HORIZON_YEARS', extractConst(wf, 'WF_HORIZON_YEARS'), C.altHistory.warFinance.horizonYears],
   ];
   // NOTE: kinetic-probe C_MS (2.998e8) is a flagged real-science constant, NOT in canon — SKIPPED
   // by design (assert presence + comment, not a canon diff). Presence is confirmed by node --check

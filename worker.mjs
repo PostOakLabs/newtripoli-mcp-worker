@@ -22,6 +22,7 @@ import { compute as interfaceBandwidthCompute } from './kernels/interface-bandwi
 import { compute as techTreePathCompute } from './kernels/tech-tree.kernel.mjs';
 import { compute as provenanceCompute } from './kernels/provenance.kernel.mjs';
 import { compute as feasibilityCrosswalkCompute } from './kernels/feasibility-crosswalk.kernel.mjs';
+import { compute as warFinanceDefaultCompute } from './kernels/war-finance.kernel.mjs';
 
 export const BASE_URL = 'https://newtripoli.xyz';
 const VERSION  = '0.3.0';
@@ -39,7 +40,7 @@ const NT_ARTIFACT_VERSION = '1.0.0';
 // OCG Standard §17 (Kernel Identity Binding) — content digest of this file, computed by
 // generate.mjs over the LF-normalized source with this line's value replaced by the literal
 // 'PLACEHOLDER'. Populated by `node generate.mjs`; idempotent (re-running yields no diff).
-const KERNEL_DIGEST = 'sha256:5d688bf16d0f5852fdba48c6860e0803f32c4c35f68f13feb5ceaaaefe446497';
+const KERNEL_DIGEST = 'sha256:2b4b48ee89a27fbc07d480dc9c6c74cc9ebb21b5f73d6a162e74cdf73738066d';
 
 // Vendored from AINumbers ChainGraph SSOT kernels/_hash.mjs (OCG Standard §4 JCS).
 // Namespace adapted for me.newtripoli. Recursive key sort + per-value
@@ -281,6 +282,7 @@ export const KERNEL_REGISTRY = {
   nt_tech_tree_path: { compute: techTreePathCompute, mandate_type: 'me.newtripoli/tech_tree_path' },
   nt_provenance: { compute: provenanceCompute, mandate_type: 'me.newtripoli/provenance' },
   nt_feasibility_crosswalk: { compute: feasibilityCrosswalkCompute, mandate_type: 'me.newtripoli/feasibility_crosswalk' },
+  ah_war_finance_default: { compute: warFinanceDefaultCompute, mandate_type: 'me.newtripoli/war_finance_default' },
 };
 
 // ---------------------------------------------------------------------------
@@ -2121,6 +2123,105 @@ function buildServer(manifest) {
         schema_version:     'nt-chaingraph-0.4.0',
         newtripoli_version: NT_ARTIFACT_VERSION,
         permalink:           BASE_URL + '/ch-sims/sims/feasibility.html',
+      },
+    };
+    artifact.audit_signature.build_identity = {
+      kernel_digest: KERNEL_DIGEST,
+      buildType:     'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      source_ref:    'worker.mjs',
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(artifact, null, 2) }],
+      structuredContent: artifact,
+    };
+  });
+
+  // -------------------------------------------------------------------------
+  // ah_war_finance_default — NEWTRIPOLI-ALTHIST-CHAINS-SPEC.md §1.
+  // Register: alt-history. Guest-legal: YES (arithmetic + HORIZON-bounded loop).
+  // -------------------------------------------------------------------------
+  server.registerTool('ah_war_finance_default', {
+    title: 'Alt-history war-finance default (treasury drain → default year → act-of-war clause)',
+    description:
+      'Computes an accounting identity over stipulated war finances: a HORIZON-bounded year loop ' +
+      'drains reserves by (war cost + debt interest − revenue), financing each deficit with debt, ' +
+      'and reports the first year reserves fall below the default threshold, the default calendar ' +
+      'year, terminal reserves, compounded debt, and whether an act-of-war clause is tripped. ' +
+      'Calibration figures are illustrative WW1-Allied-scale parameters, not asserted history. ' +
+      'Arithmetic + bounded loop + compare — deterministic, guest-legal (zk-provable in §18).',
+    inputSchema: {
+      annual_revenue: z.number().min(0).max(1e9).default(200).describe(
+        'Annual treasury revenue (£M order; calibration default 200).'
+      ),
+      war_cost_per_year: z.number().min(0).max(1e9).default(1000).describe(
+        'War spend per year (£M/yr order; calibration default 1000).'
+      ),
+      starting_reserves: z.number().min(0).max(1e9).default(165).describe(
+        'Starting gold/cash reserves (£M order; calibration default 165).'
+      ),
+      starting_debt: z.number().min(0).max(1e9).default(0).describe(
+        'Starting debt principal (£M order; default 0).'
+      ),
+      debt_service_rate: z.number().min(0).max(1).default(0.05).describe(
+        'Annual interest fraction on outstanding debt (default 0.05).'
+      ),
+      default_threshold: z.number().min(-1e9).max(1e9).default(0).describe(
+        'Reserve level below which the treasury defaults (default 0).'
+      ),
+      act_of_war_clause: z.boolean().default(false).describe(
+        'Whether a default trips a contractual act-of-war clause (default false).'
+      ),
+      start_year: z.number().min(1000).max(3000).default(1914).describe(
+        'Calendar year the horizon starts (calibration default 1914).'
+      ),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async ({ annual_revenue, war_cost_per_year, starting_reserves, starting_debt, debt_service_rate, default_threshold, act_of_war_clause, start_year }) => {
+    const input_parameters = {
+      annual_revenue:    annual_revenue ?? 200,
+      war_cost_per_year: war_cost_per_year ?? 1000,
+      starting_reserves: starting_reserves ?? 165,
+      starting_debt:     starting_debt ?? 0,
+      debt_service_rate: debt_service_rate ?? 0.05,
+      default_threshold: default_threshold ?? 0,
+      act_of_war_clause: act_of_war_clause ?? false,
+      start_year:        start_year ?? 1914,
+    };
+    const policyParameters = {
+      execution_backend: 'js',
+      canon_version:      CANON_VERSION,
+      input_parameters,
+    };
+    const { output_payload: outputPayload } = warFinanceDefaultCompute(policyParameters);
+    const execHash = await executionHash(policyParameters, outputPayload);
+
+    const artifact = {
+      '@context': 'https://openchain.graph/spec/v0.3/context.jsonld',
+      chaingraph_version: '0.4.0',
+      buildType: 'https://openchain.graph/spec/v0.2#WebCryptoSHA256',
+      mandate_type: 'me.newtripoli/war_finance_default',
+      tool_id: 'ah-war-finance-default',
+      tool_version: '1.0.0',
+      generated_at: new Date().toISOString(),
+      execution_hash: execHash,
+      chain: { parent_hashes: [], parent_tool_ids: [], chain_depth: 0 },
+      policy_parameters: policyParameters,
+      output_payload: outputPayload,
+      compliance_flags: ['alt-history'],
+      audit_signature: {
+        client_side_executed: true,
+        zero_pii_verified:    true,
+        deterministic_run:    true,
+        register:             'alt-history',
+        data_sources: [
+          'Alt History - What if WW1 had been avoided.md (Big Six war-finance thread)',
+          'Inter-Allied war debts + 1917 Liberty Loans (calibration)',
+          '1932 Lausanne Conference default / gold-standard suspensions (calibration)',
+        ],
+        schema_version:     'nt-chaingraph-0.4.0',
+        newtripoli_version: NT_ARTIFACT_VERSION,
+        permalink:           BASE_URL + '/ch-sims/demos/war-finance-default.html',
       },
     };
     artifact.audit_signature.build_identity = {

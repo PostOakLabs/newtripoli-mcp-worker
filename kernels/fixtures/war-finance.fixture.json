@@ -1,0 +1,10 @@
+{
+  "annual_revenue": 200,
+  "war_cost_per_year": 1000,
+  "starting_reserves": 165,
+  "starting_debt": 0,
+  "debt_service_rate": 0.05,
+  "default_threshold": 0,
+  "act_of_war_clause": false,
+  "start_year": 1914
+}
