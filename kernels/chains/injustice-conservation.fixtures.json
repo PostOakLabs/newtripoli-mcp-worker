@@ -1,0 +1,29 @@
+{
+  "chain": "injustice-conservation",
+  "cases": [
+    {
+      "branch": "unstable",
+      "step_overrides": {},
+      "expected_path_taken": [
+        "grade",
+        "anchor"
+      ],
+      "expected_ranking_stable": false,
+      "expected_composite_hash": null
+    },
+    {
+      "branch": "stable",
+      "step_overrides": {
+        "grade": {
+          "include_indirect": false
+        }
+      },
+      "expected_path_taken": [
+        "grade",
+        "anchor"
+      ],
+      "expected_ranking_stable": true,
+      "expected_composite_hash": null
+    }
+  ]
+}

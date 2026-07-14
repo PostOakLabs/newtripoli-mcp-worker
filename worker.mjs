@@ -44,7 +44,7 @@ const NT_ARTIFACT_VERSION = '1.0.0';
 // OCG Standard §17 (Kernel Identity Binding) — content digest of this file, computed by
 // generate.mjs over the LF-normalized source with this line's value replaced by the literal
 // 'PLACEHOLDER'. Populated by `node generate.mjs`; idempotent (re-running yields no diff).
-const KERNEL_DIGEST = 'sha256:74a0278347b58674bf0bbf390398b2bdf734c832b3866043bbdbf08e83549875';
+const KERNEL_DIGEST = 'sha256:65e34dc81aa6825bdbd0e8b50d5f7c5414787a7efe9ecf28023434a28283355a';
 
 // Vendored from AINumbers ChainGraph SSOT kernels/_hash.mjs (OCG Standard §4 JCS).
 // Namespace adapted for me.newtripoli. Recursive key sort + per-value
@@ -609,6 +609,43 @@ export const CHAINS = {
                   canon_refs: ['C-D1', 'C-D4', 'C-D5', 'C-D6', 'C-D7', 'C-D9', 'C-D10'], parent_hash: null } },
     ],
   },
+
+  // §5A.1 (ALTHIST-CHAINS-SPEC) — structural-rhyme: the partial-hash "provable rhyme".
+  // Two deterministic sub-chains (clock+decay) under ACTOR_A then ACTOR_B, run as one
+  // 4-step linear chain, NO gate → all 4 always RAN. runChain's per-step preimage does
+  // NOT fold in the parent hash, so a_clock.execution_hash === b_clock.execution_hash
+  // IFF the two presets share identical clock knobs (likewise decay). Baked fields =
+  // the kernels' documented defaults (§2/§3), so ACTOR_A and ACTOR_B are byte-identical
+  // → the default case is a genuine identity (rhyme: clock true, decay true). The
+  // contested middle (ah_decapitation_window) is explainer-only, NOT a chain step.
+  'structural-rhyme': {
+    title: 'structural-rhyme',
+    steps: [
+      { id: 'a_clock', tool_id: 'ah_nuclear_program_clock', fields: { program_start_year: 1942, critical_mass_kg: 6.0, fissile_production_kg_yr: 4.0, engineering_lead_months: 18, yield_kt: 20, test_medium: 'atmospheric' } },
+      { id: 'a_decay', tool_id: 'ah_attribution_decay',     fields: { initial_confidence: 0.95, decay_per_year: 0.15, years_elapsed: 5, censorship_factor: 0, corroborating_tests: 0, threshold: 0.5 } },
+      { id: 'b_clock', tool_id: 'ah_nuclear_program_clock', fields: { program_start_year: 1942, critical_mass_kg: 6.0, fissile_production_kg_yr: 4.0, engineering_lead_months: 18, yield_kt: 20, test_medium: 'atmospheric' } },
+      { id: 'b_decay', tool_id: 'ah_attribution_decay',     fields: { initial_confidence: 0.95, decay_per_year: 0.15, years_elapsed: 5, censorship_factor: 0, corroborating_tests: 0, threshold: 0.5 } },
+    ],
+  },
+
+  // §5A.2 (ALTHIST-CHAINS-SPEC) — injustice-conservation: the capstone meta fan-in.
+  // The fan-in is INSIDE ah_injustice_ledger (ingests the full branch array in one call,
+  // emits the unstable-ranking verdict); the chain then anchors the hashed ledger (mirror
+  // of feasibility-audit-crosswalk = meta-kernel → nt_provenance). NO gate → both RAN,
+  // path [grade, anchor]. Thesis = unstable ranking; the ledger stays hashed either way.
+  'injustice-conservation': {
+    title: 'injustice-conservation',
+    steps: [
+      { id: 'grade', tool_id: 'ah_injustice_ledger',
+        fields: { branches: [
+                    { id: 'branch_A', direct_deaths: 500000,  indirect_deaths: 3000000, refugees: 1000000, idps: 500000, sovereignty_lost: 0.2 },
+                    { id: 'branch_B', direct_deaths: 1200000, indirect_deaths: 800000,  refugees: 300000,  idps: 200000, sovereignty_lost: 0.5 },
+                    { id: 'branch_C', direct_deaths: 800000,  indirect_deaths: 1500000, refugees: 600000,  idps: 400000, sovereignty_lost: 0.3 },
+                  ], indirect_multiplier: 3.5, include_indirect: true, displacement_weight: 0.1, sovereignty_weight: 1000000 } },
+      { id: 'anchor', tool_id: 'nt_provenance',
+        fields: { sim_id: 'ah_injustice_ledger', inputs: {}, canon_refs: ['althist-injustice'], parent_hash: null } },
+    ],
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -702,6 +739,30 @@ export const CHAIN_META = {
     steps: [
       { tool_id: 'nt_feasibility_crosswalk', slug: 'feasibility-crosswalk', handoff: 'If the binding_verdict is Barred, the chain ends here (do not anchor a "passing" run). Otherwise export and open step 2 to anchor provenance.' },
       { tool_id: 'nt_provenance',            slug: 'about',                 handoff: 'Final step — export the Policy Mandate for your audit trail.' },
+    ],
+  },
+  'structural-rhyme': {
+    title: 'Structural rhyme',
+    description: 'The partial-hash "provable rhyme": the same clock+decay sub-chain under Actor A then Actor B, run as one 4-step chain with no gate. Because a step\'s hash does not fold in its parent, identical knobs → identical per-step hashes — the rhyme is a hash identity, not a claim.',
+    register: 'alt-history',
+    tier: 'meta',
+    page: null,
+    steps: [
+      { tool_id: 'ah_nuclear_program_clock', slug: 'nuclear-program-clock', handoff: 'Actor A\'s program clock — export it, then open step 2 (Actor A attribution decay).' },
+      { tool_id: 'ah_attribution_decay',     slug: 'attribution-decay',     handoff: 'Actor A\'s attribution decay — export it, then open step 3 (Actor B program clock).' },
+      { tool_id: 'ah_nuclear_program_clock', slug: 'nuclear-program-clock', handoff: 'Actor B\'s program clock — its execution hash equals step 1\'s iff the clock knobs match. Export it, then open step 4.' },
+      { tool_id: 'ah_attribution_decay',     slug: 'attribution-decay',     handoff: 'Final step — Actor B\'s attribution decay; its hash equals step 2\'s iff the decay knobs match. Export the Policy Mandate for your audit trail.' },
+    ],
+  },
+  'injustice-conservation': {
+    title: 'Injustice conservation',
+    description: 'The capstone meta fan-in: grade every conflict branch in one ledger call, then anchor the hashed ledger. The thesis is that the least-unjust ranking is unstable under defensible counting rules — the accounting is the exposed, adjustable argument.',
+    register: 'alt-history',
+    tier: 'meta',
+    page: null,
+    steps: [
+      { tool_id: 'ah_injustice_ledger', slug: 'injustice-ledger', handoff: 'Grades all branches and returns the unstable-ranking verdict. Export it, then open step 2 to anchor provenance.' },
+      { tool_id: 'nt_provenance',        slug: 'about',            handoff: 'Final step — export the Policy Mandate for your audit trail.' },
     ],
   },
 };

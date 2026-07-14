@@ -1,0 +1,39 @@
+{
+  "chain": "structural-rhyme",
+  "cases": [
+    {
+      "branch": "rhyming",
+      "step_overrides": {},
+      "expected_path_taken": [
+        "a_clock",
+        "a_decay",
+        "b_clock",
+        "b_decay"
+      ],
+      "expected_rhyme": {
+        "clock": true,
+        "decay": true
+      },
+      "expected_composite_hash": null
+    },
+    {
+      "branch": "diverging",
+      "step_overrides": {
+        "b_clock": {
+          "program_start_year": 1945
+        }
+      },
+      "expected_path_taken": [
+        "a_clock",
+        "a_decay",
+        "b_clock",
+        "b_decay"
+      ],
+      "expected_rhyme": {
+        "clock": false,
+        "decay": true
+      },
+      "expected_composite_hash": null
+    }
+  ]
+}
