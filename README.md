@@ -12,7 +12,7 @@ New Tripoli is a hard-sf orbital-habitat scenario with a fully worked-out intern
 
 This worker exposes that canon as **callable, composable tools** for any MCP-speaking client (Claude Desktop, Claude Code, Cursor, or a raw HTTP client), so an agent — or a person — can run the actual math instead of asking an LLM to eyeball it.
 
-## Tools (13)
+## Tools (18)
 
 | Tool | What it computes |
 |---|---|
@@ -29,12 +29,19 @@ This worker exposes that canon as **callable, composable tools** for any MCP-spe
 | `nt_tech_tree_path` | Post-Wake tech-tree path solver |
 | `nt_provenance` | Chaingraph provenance manifest for any prior tool run |
 | `nt_feasibility_crosswalk` | Graded D1–D10 feasibility claim ledger, crosswalked against a scenario config |
+| `ah_war_finance_default` | War-finance accounting identity: HORIZON-bounded treasury drain to default year, act-of-war clause |
+| `ah_nuclear_program_clock` | Program timeline from stipulated fissile inputs: time-to-critical-mass plus engineering lead |
+| `ah_attribution_decay` | Attribution-confidence decay curve: geometric per-year decay, corroboration, threshold verdict |
+| `ah_injustice_ledger` | Scores each alt-history branch two ways: direct battle-deaths only vs. full-weighted |
+| `ch_stadium_capacity` | Sizes the "single stadium civilization" image: physical substrate footprint vs. population |
+
+Prefixes: `nt_` = core-canon instruments, `ah_` = alt-history branch, `ch_` = cognitive-husbandry thread.
 
 Plus discovery/utility tools: `list_newtripoli_tools`, `find_tool`, `find_chain`, `build_workflow_links`, `verify_execution_hash`, `run_chain`.
 
 The authoritative, always-current list (with input schemas, citations, and hash notes) is generated to [`data/tools-manifest.json`](data/tools-manifest.json) — read that instead of re-deriving this table from source.
 
-## Chains (7)
+## Chains (9)
 
 Chains thread multiple tools together, passing each step's `execution_hash` into the next and producing a `composite_execution_hash` for the whole run:
 
@@ -45,6 +52,8 @@ Chains thread multiple tools together, passing each step's `execution_hash` into
 - **friendship-across-tiers** — the physics of friendship: two dilated parties at different rates, plus comms budget.
 - **provenance-anchor** — the OCG backbone every other chain terminates into: any tool's run, anchored to a provenance manifest.
 - **feasibility-audit-crosswalk** — meta fan-in: grades all C-D1..C-D10 claims against one scenario config, then anchors provenance.
+- **structural-rhyme** — the partial-hash "provable rhyme": the same clock+decay sub-chain under Actor A then Actor B, run as one 4-step chain, no gate.
+- **injustice-conservation** — capstone meta fan-in: grade every conflict branch in one ledger call, then anchor the hashed ledger.
 
 Run a chain with `run_chain`; each step and the composite result are independently hash-verifiable.
 
