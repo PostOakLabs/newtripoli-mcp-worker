@@ -52,8 +52,8 @@ Chains thread multiple tools together, passing each step's `execution_hash` into
 - **friendship-across-tiers** — the physics of friendship: two dilated parties at different rates, plus comms budget.
 - **provenance-anchor** — the OCG backbone every other chain terminates into: any tool's run, anchored to a provenance manifest.
 - **feasibility-audit-crosswalk** — meta fan-in: grades all C-D1..C-D10 claims against one scenario config, then anchors provenance.
-- **structural-rhyme** — cross-era structural parallels: same decision shape, different substrate.
-- **injustice-conservation** — tracks how the injustice ledger's two scorings move across branches.
+- **structural-rhyme** — the partial-hash "provable rhyme": the same clock+decay sub-chain under Actor A then Actor B, run as one 4-step chain, no gate.
+- **injustice-conservation** — capstone meta fan-in: grade every conflict branch in one ledger call, then anchor the hashed ledger.
 
 Run a chain with `run_chain`; each step and the composite result are independently hash-verifiable.
 
